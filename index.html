@@ -1,0 +1,1470 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPL — Counter-Strike Team</title>
+<style>
+  :root {
+    --accent: #4a9eff;
+    --accent-hover: #6fb3ff;
+    --bg: #0f1419;
+    --bg-secondary: #1a2332;
+    --bg-card: rgba(26, 35, 50, 0.6);
+    --bg-card-solid: #141b26;
+    --border: #2a3f5f;
+    --text: #e6e6e6;
+    --text-muted: #7a8ba0;
+    --text-soft: #a8b5c4;
+    --success: #4aff88;
+    --danger: #ff4a4a;
+    --gold: #ffd700;
+    --silver: #c0c0c0;
+    --bronze: #cd7f32;
+    --shadow: rgba(0,0,0,0.5);
+    --glow: rgba(74,158,255,0.4);
+  }
+
+  [data-theme="light"] {
+    --accent: #2a7ed8;
+    --accent-hover: #4a9eff;
+    --bg: #f0f2f5;
+    --bg-secondary: #ffffff;
+    --bg-card: rgba(255, 255, 255, 0.85);
+    --bg-card-solid: #ffffff;
+    --border: #d0d7e0;
+    --text: #1a2332;
+    --text-muted: #5a6a7a;
+    --text-soft: #4a5a6a;
+    --success: #2eb85c;
+    --danger: #d93025;
+    --gold: #d4a800;
+    --silver: #888;
+    --bronze: #a06030;
+    --shadow: rgba(0,0,0,0.15);
+    --glow: rgba(42,126,216,0.3);
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  html { scroll-behavior: smooth; }
+  body {
+    font-family: 'Segoe UI', Tahoma, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    transition: background 0.4s, color 0.4s;
+    overflow-x: hidden;
+  }
+
+  ::-webkit-scrollbar { width: 10px; }
+  ::-webkit-scrollbar-track { background: var(--bg); }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 5px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+
+  #particlesCanvas {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0.6;
+  }
+  [data-theme="light"] #particlesCanvas { opacity: 0.2; }
+
+  #loader {
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%; height: 100%;
+    background: var(--bg);
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.6s, visibility 0.6s;
+  }
+  #loader.hidden { opacity: 0; visibility: hidden; }
+  #loader img { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--accent); margin-bottom: 25px; animation: pulse 1.5s infinite; }
+  #loader .loader-text { color: var(--accent); font-size: 28px; font-weight: 800; letter-spacing: 4px; margin-bottom: 20px; }
+  #loader .loader-bar { width: 200px; height: 4px; background: var(--border); border-radius: 2px; overflow: hidden; }
+  #loader .loader-bar-fill { height: 100%; background: var(--accent); animation: loading 1.5s ease-in-out infinite; }
+  @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.08); } }
+  @keyframes loading { 0% { width: 0; margin-left: 0; } 50% { width: 100%; margin-left: 0; } 100% { width: 0; margin-left: 100%; } }
+
+  @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+  @keyframes slideIn { from { opacity: 0; transform: translateX(-20px); } to { opacity: 1; transform: translateX(0); } }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 100px 20px 40px; position: relative; z-index: 1; }
+
+  header {
+    background: var(--bg-card);
+    backdrop-filter: blur(20px);
+    -webkit-backdrop-filter: blur(20px);
+    border-bottom: 2px solid var(--border);
+    padding: 15px 40px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    z-index: 100;
+    box-shadow: 0 4px 20px var(--shadow);
+    transition: background 0.4s, border 0.4s;
+  }
+  .logo-wrap { display: flex; align-items: center; gap: 12px; cursor: pointer; text-decoration: none; }
+  .logo-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent); transition: transform 0.3s; }
+  .logo-img:hover { transform: rotate(360deg); }
+  .logo-text { font-size: 26px; font-weight: 800; letter-spacing: 3px; color: var(--accent); text-shadow: 0 0 20px var(--glow); }
+
+  .main-nav { display: flex; gap: 5px; align-items: center; }
+  .nav-btn { background: transparent; border: none; color: var(--text-muted); font-size: 14px; font-weight: 600; padding: 10px 16px; border-radius: 8px; cursor: pointer; transition: all 0.2s; font-family: inherit; }
+  .nav-btn:hover { color: var(--text); background: var(--border); }
+  .nav-btn.active { color: var(--accent); background: rgba(74,158,255,0.1); }
+
+  .header-controls { display: flex; gap: 10px; align-items: center; }
+  .icon-btn { width: 40px; height: 40px; border-radius: 50%; background: transparent; border: 1px solid var(--border); color: var(--text); cursor: pointer; font-size: 18px; display: flex; align-items: center; justify-content: center; transition: 0.2s; }
+  .icon-btn:hover { border-color: var(--accent); color: var(--accent); transform: scale(1.1); }
+  .color-picker-wrap { position: relative; }
+  .color-dot { width: 24px; height: 24px; border-radius: 50%; background: var(--accent); border: 2px solid var(--border); cursor: pointer; }
+  .color-menu { display: none; position: absolute; top: 50px; right: 0; background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 10px; padding: 10px; gap: 8px; flex-wrap: wrap; width: 180px; box-shadow: 0 5px 20px var(--shadow); z-index: 200; }
+  .color-menu.open { display: flex; }
+  .color-menu .color-choice { width: 30px; height: 30px; border-radius: 50%; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+  .color-menu .color-choice:hover { transform: scale(1.15); border-color: var(--text); }
+
+  h1 { font-size: 36px; margin-bottom: 10px; color: var(--text); }
+  .subtitle { color: var(--text-muted); margin-bottom: 40px; font-size: 14px; letter-spacing: 1px; }
+
+  .stats-bar { display: flex; gap: 20px; flex-wrap: wrap; margin-bottom: 30px; }
+  .stat-box { flex: 1; min-width: 150px; background: var(--bg-card); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--border); border-radius: 14px; padding: 22px; text-align: center; transition: all 0.3s; }
+  .stat-box:hover { transform: translateY(-5px); border-color: var(--accent); box-shadow: 0 10px 30px var(--glow); }
+  .stat-box .stat-value { font-size: 34px; font-weight: 800; color: var(--accent); }
+  .stat-box .stat-label { color: var(--text-muted); font-size: 12px; letter-spacing: 2px; text-transform: uppercase; margin-top: 5px; }
+
+  .top3-block, .winner-block, .news-block { background: var(--bg-card); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--border); border-radius: 16px; padding: 30px; margin-bottom: 30px; animation: fadeInUp 0.6s ease forwards; }
+  .top3-block h2, .news-block h2 { color: var(--accent); margin-bottom: 20px; font-size: 22px; }
+  .top3-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+  .top3-card { background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 12px; padding: 20px; text-align: center; cursor: pointer; transition: 0.3s; }
+  .top3-card:hover { border-color: var(--accent); transform: translateY(-6px); box-shadow: 0 15px 35px var(--glow); }
+  .top3-card .rank { font-size: 36px; font-weight: 900; margin-bottom: 10px; }
+  .top3-card .rank.gold { color: var(--gold); text-shadow: 0 0 20px var(--gold); }
+  .top3-card .rank.silver { color: var(--silver); }
+  .top3-card .rank.bronze { color: var(--bronze); }
+  .top3-card img { width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border); margin-bottom: 10px; }
+  .top3-card .nick { color: var(--text); font-weight: 700; font-size: 18px; }
+  .top3-card .kd { color: var(--success); font-size: 14px; margin-top: 5px; }
+
+  .winner-block { text-align: center; }
+  .winner-photo { width: 200px; height: 200px; border-radius: 50%; object-fit: cover; border: 4px solid var(--accent); box-shadow: 0 0 40px var(--glow); margin-bottom: 20px; }
+  .winner-label { color: var(--text-muted); font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+  .winner-name { font-size: 28px; font-weight: 700; color: var(--text); margin-bottom: 15px; }
+  .tournament-link { display: inline-block; background: var(--accent); color: #0f1419; padding: 12px 28px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; border: none; font-family: inherit; font-size: 14px; }
+  .tournament-link:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 25px var(--glow); }
+
+  .news-text { color: var(--text-soft); line-height: 1.7; margin-bottom: 25px; white-space: pre-wrap; }
+
+  .highlights-slider { position: relative; }
+  .highlights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .highlight-item { background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; transition: 0.3s; }
+  .highlight-item:hover { border-color: var(--accent); transform: translateY(-5px); box-shadow: 0 10px 30px var(--glow); }
+  .highlight-item iframe, .highlight-item img, .highlight-item video { width: 100%; display: block; }
+  .highlight-item img { aspect-ratio: 16/9; object-fit: cover; }
+  .highlight-item iframe { aspect-ratio: 16/9; border: none; }
+  .highlight-caption { padding: 12px 15px; color: var(--text); font-size: 14px; font-weight: 600; }
+
+  .search-box { margin-bottom: 25px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; }
+  .search-box input { flex: 1; min-width: 250px; padding: 14px 20px; background: var(--bg-card); backdrop-filter: blur(10px); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 15px; font-family: inherit; transition: 0.2s; }
+  .search-box input:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 20px var(--glow); }
+  .search-box select { padding: 14px 20px; background: var(--bg-card); border: 1px solid var(--border); border-radius: 12px; color: var(--text); font-size: 15px; font-family: inherit; cursor: pointer; }
+  .search-box select:focus { outline: none; border-color: var(--accent); }
+
+  .players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+  .player-card { background: var(--bg-card); backdrop-filter: blur(15px); -webkit-backdrop-filter: blur(15px); border: 1px solid var(--border); border-radius: 14px; padding: 20px; transition: all 0.35s ease; cursor: pointer; text-align: center; animation: fadeInUp 0.5s ease forwards; position: relative; overflow: hidden; }
+  .player-card::before { content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: radial-gradient(circle at center, var(--glow) 0%, transparent 70%); opacity: 0; transition: 0.4s; pointer-events: none; }
+  .player-card:hover::before { opacity: 0.4; }
+  .player-card:hover { transform: translateY(-8px); border-color: var(--accent); box-shadow: 0 15px 40px var(--glow); }
+  .player-card img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid var(--border); margin-bottom: 15px; transition: 0.3s; }
+  .player-card:hover img { border-color: var(--accent); transform: scale(1.05); }
+  .player-nick { font-size: 20px; font-weight: 700; color: var(--text); margin-bottom: 5px; }
+  .player-nick.gradient { background: linear-gradient(90deg, var(--gold), var(--accent)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+  .player-role { display: inline-flex; align-items: center; gap: 5px; background: var(--accent); color: #0f1419; font-size: 10px; font-weight: 700; padding: 4px 12px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; }
+  .player-real-name { color: var(--text-muted); font-size: 13px; margin-top: 8px; }
+
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); z-index: 1000; overflow-y: auto; padding: 60px 20px 40px; animation: fadeIn 0.3s; }
+  .modal-overlay.active { display: block; }
+  .modal { background: var(--bg-secondary); border: 1px solid var(--border); border-radius: 16px; max-width: 700px; margin: 0 auto; padding: 40px; position: relative; animation: fadeInUp 0.4s ease; box-shadow: 0 20px 60px var(--shadow); }
+  .modal-close { position: absolute; top: 15px; right: 20px; font-size: 28px; color: var(--text-muted); cursor: pointer; background: none; border: none; transition: 0.2s; width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center; }
+  .modal-close:hover { color: var(--text); background: var(--border); transform: rotate(90deg); }
+  .modal-photo { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 3px solid var(--accent); margin-bottom: 20px; }
+  .modal h2 { color: var(--text); font-size: 32px; margin-bottom: 5px; }
+  .modal .role { color: var(--accent); font-weight: 700; margin-bottom: 20px; }
+  .modal .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); }
+  .modal .info-row span:first-child { color: var(--text-muted); }
+  .modal .info-row span:last-child { color: var(--text); font-weight: 600; }
+  .modal h3 { color: var(--accent); margin: 25px 0 15px; font-size: 18px; }
+  .tournament-item { background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 8px; padding: 15px; margin-bottom: 10px; transition: 0.2s; }
+  .tournament-item:hover { border-color: var(--accent); }
+  .tournament-item .t-name { color: var(--text); font-weight: 700; margin-bottom: 5px; }
+  .tournament-item .t-info { color: var(--text-muted); font-size: 13px; }
+
+  .breadcrumbs { color: var(--text-muted); font-size: 13px; margin-bottom: 15px; }
+  .breadcrumbs span { color: var(--accent); cursor: pointer; }
+  .breadcrumbs span:hover { text-decoration: underline; }
+
+  .admin-section { background: var(--bg-card); backdrop-filter: blur(15px); border: 1px solid var(--border); border-radius: 14px; padding: 30px; margin-bottom: 30px; }
+  .admin-section h2 { color: var(--accent); margin-bottom: 20px; font-size: 20px; }
+  .admin-section h3 { color: var(--text); margin: 20px 0 10px; font-size: 15px; }
+  .form-group { margin-bottom: 12px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; max-width: 400px; padding: 11px 15px; background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 8px; color: var(--text); font-size: 14px; font-family: inherit; transition: 0.2s; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: var(--accent); box-shadow: 0 0 15px var(--glow); }
+  .form-group textarea { min-height: 80px; resize: vertical; }
+
+  .btn { padding: 11px 22px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-right: 8px; margin-bottom: 8px; position: relative; overflow: hidden; font-family: inherit; }
+  .btn::after { content: ''; position: absolute; top: 50%; left: 50%; width: 0; height: 0; background: rgba(255,255,255,0.3); border-radius: 50%; transform: translate(-50%,-50%); transition: width 0.4s, height 0.4s; }
+  .btn:active::after { width: 300px; height: 300px; }
+  .btn-primary { background: var(--accent); color: #0f1419; }
+  .btn-primary:hover { background: var(--accent-hover); transform: translateY(-2px); box-shadow: 0 8px 25px var(--glow); }
+  .btn-secondary { background: transparent; color: var(--text-muted); border: 1px solid var(--border); }
+  .btn-secondary:hover { color: var(--text); border-color: var(--accent); }
+  .btn-danger { background: transparent; color: var(--danger); border: 1px solid var(--danger); }
+  .btn-danger:hover { background: var(--danger); color: #fff; }
+  .btn-small { padding: 6px 12px; font-size: 12px; }
+
+  .status-msg { margin-top: 12px; font-size: 13px; color: var(--text-muted); }
+  .status-msg.error { color: var(--danger); }
+  .status-msg.success { color: var(--success); }
+  .loader { text-align: center; color: var(--text-muted); padding: 40px; font-size: 14px; }
+  .spinner { display: inline-block; width: 24px; height: 24px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 10px; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  footer { text-align: center; padding: 40px; color: var(--text-muted); font-size: 12px; border-top: 1px solid var(--border); margin-top: 60px; }
+
+  .checkbox-list { display: flex; flex-wrap: wrap; gap: 10px; max-width: 600px; }
+  .checkbox-list label { background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; color: var(--text); display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+  .checkbox-list label:hover { border-color: var(--accent); }
+  .checkbox-list input[type="checkbox"] { accent-color: var(--accent); }
+
+  .highlight-input-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .highlight-input-row input { flex: 1; min-width: 150px; padding: 8px 12px; background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; }
+
+  .map-stat-item { display: flex; justify-content: space-between; align-items: center; background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 6px; padding: 10px 15px; margin-bottom: 6px; }
+  .map-stat-item .info { flex: 1; }
+  .map-stat-item .actions { display: flex; gap: 6px; }
+
+  .match-map-row { display: flex; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; align-items: center; }
+  .match-map-row input, .match-map-row select { padding: 8px 10px; background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 6px; color: var(--text); font-size: 13px; }
+  .match-map-row .mm-map { min-width: 130px; }
+  .match-map-row .mm-pick { min-width: 110px; }
+  .match-map-row .mm-score { width: 70px; }
+
+  .team-bracket { display: flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 8px; background: var(--bg-card-solid); border: 1px solid var(--border); margin-bottom: 5px; cursor: pointer; transition: 0.3s; }
+  .team-bracket:hover { border-color: var(--accent); transform: translateX(5px); }
+  .team-bracket.winner { border-color: var(--gold); background: rgba(255,215,0,0.08); box-shadow: 0 0 20px rgba(255,215,0,0.3); animation: pulseGold 2s infinite; }
+  @keyframes pulseGold { 0%,100% { box-shadow: 0 0 15px rgba(255,215,0,0.3); } 50% { box-shadow: 0 0 30px rgba(255,215,0,0.6); } }
+
+  .match-box { background: var(--bg-card-solid); border: 1px solid var(--border); border-radius: 10px; padding: 15px; margin-bottom: 15px; }
+  .match-box .match-header { color: var(--text-muted); font-size: 12px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; }
+  .match-box .maps-list { color: var(--text-soft); font-size: 13px; margin-top: 10px; }
+  .match-box .maps-list div { padding: 4px 0; display: flex; justify-content: space-between; }
+
+  .mvp-big-block { background: linear-gradient(145deg, rgba(255,215,0,0.15), rgba(255,215,0,0.05)); border: 2px solid var(--gold); border-radius: 16px; padding: 25px; margin: 20px 0; text-align: center; box-shadow: 0 0 40px rgba(255,215,0,0.25); animation: mvpPulse 3s infinite; }
+  @keyframes mvpPulse { 0%,100% { box-shadow: 0 0 30px rgba(255,215,0,0.2); } 50% { box-shadow: 0 0 50px rgba(255,215,0,0.5); } }
+  .mvp-big-block .mvp-label { color: var(--gold); font-size: 14px; letter-spacing: 3px; text-transform: uppercase; margin-bottom: 15px; font-weight: 700; }
+  .mvp-big-block img { width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 4px solid var(--gold); margin-bottom: 15px; }
+  .mvp-big-block .mvp-nick { color: var(--text); font-size: 24px; font-weight: 700; }
+  .mvp-big-block .mvp-kd { color: var(--gold); font-size: 16px; margin-top: 8px; }
+
+  #backToTop { display: none; position: fixed; bottom: 30px; right: 30px; width: 50px; height: 50px; border-radius: 50%; background: var(--accent); color: #0f1419; border: none; cursor: pointer; font-size: 22px; font-weight: 700; box-shadow: 0 8px 25px var(--glow); z-index: 500; transition: 0.3s; }
+  #backToTop:hover { transform: translateY(-5px) scale(1.1); background: var(--accent-hover); }
+  #backToTop.show { display: flex; align-items: center; justify-content: center; animation: fadeInUp 0.4s; }
+
+  .map-icon { display: inline-block; width: 16px; height: 16px; border-radius: 3px; background: var(--accent); margin-right: 6px; vertical-align: middle; }
+  .map-icon.mirage { background: linear-gradient(135deg, #d4a76a, #a67c52); }
+  .map-icon.inferno { background: linear-gradient(135deg, #d94a3d, #8b2418); }
+  .map-icon.nuke { background: linear-gradient(135deg, #4ac9d9, #217a8a); }
+  .map-icon.overpass { background: linear-gradient(135deg, #6a9e5c, #3d6b32); }
+  .map-icon.dust2 { background: linear-gradient(135deg, #e0c088, #a8894e); }
+  .map-icon.ancient { background: linear-gradient(135deg, #6b9e7a, #2e5e3e); }
+  .map-icon.vertigo { background: linear-gradient(135deg, #7a7a9e, #4a4a6e); }
+  .map-icon.anubis { background: linear-gradient(135deg, #e0b060, #a87830); }
+  .map-icon.train { background: linear-gradient(135deg, #6a7a8a, #3a4a5a); }
+
+  .role-icon { display: inline-block; margin-right: 4px; }
+
+  .pages { display: flex; justify-content: center; gap: 8px; margin-top: 30px; flex-wrap: wrap; }
+  .pages button { padding: 8px 14px; border-radius: 6px; background: var(--bg-card-solid); border: 1px solid var(--border); color: var(--text); cursor: pointer; font-family: inherit; transition: 0.2s; }
+  .pages button:hover { border-color: var(--accent); }
+  .pages button.active { background: var(--accent); color: #0f1419; border-color: var(--accent); }
+
+  .tournaments-grid, .teams-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 20px; }
+  .tournament-card, .team-card { background: var(--bg-card); backdrop-filter: blur(15px); border: 1px solid var(--border); border-radius: 14px; padding: 20px; cursor: pointer; transition: 0.3s; animation: fadeInUp 0.5s ease forwards; }
+  .tournament-card:hover, .team-card:hover { transform: translateY(-6px); border-color: var(--accent); box-shadow: 0 15px 35px var(--glow); }
+  .tournament-card h3, .team-card h3 { color: var(--text); margin-bottom: 8px; }
+  .tournament-card .meta, .team-card .meta { color: var(--text-muted); font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div id="loader">
+  <img src="https://i.postimg.cc/KYXSy3mn/file.webp" alt="RPL">
+  <div class="loader-text">RPL</div>
+  <div class="loader-bar"><div class="loader-bar-fill"></div></div>
+</div>
+
+<canvas id="particlesCanvas"></canvas>
+
+<header>
+  <a href="#" class="logo-wrap" onclick="goHome(); return false;">
+    <img class="logo-img" src="https://i.postimg.cc/KYXSy3mn/file.webp" alt="RPL">
+    <div class="logo-text">RPL</div>
+  </a>
+
+  <nav class="main-nav" id="mainNav">
+    <button class="nav-btn active" data-page="home" onclick="switchPage('home')">Главная</button>
+    <button class="nav-btn" data-page="players" onclick="switchPage('players')">Игроки</button>
+    <button class="nav-btn" data-page="tournaments" onclick="switchPage('tournaments')">Турниры</button>
+    <button class="nav-btn" data-page="teams" onclick="switchPage('teams')">Команды</button>
+  </nav>
+
+  <div class="header-controls">
+    <div class="color-picker-wrap">
+      <div class="color-dot" id="colorDot" onclick="toggleColorMenu()"></div>
+      <div class="color-menu" id="colorMenu">
+        <div class="color-choice" style="background:#4a9eff" onclick="setAccent('#4a9eff','#6fb3ff','rgba(74,158,255,0.4)')"></div>
+        <div class="color-choice" style="background:#ff4a4a" onclick="setAccent('#ff4a4a','#ff6b6b','rgba(255,74,74,0.4)')"></div>
+        <div class="color-choice" style="background:#4aff88" onclick="setAccent('#4aff88','#6fffa0','rgba(74,255,136,0.4)')"></div>
+        <div class="color-choice" style="background:#b44aff" onclick="setAccent('#b44aff','#c96fff','rgba(180,74,255,0.4)')"></div>
+        <div class="color-choice" style="background:#ff9d4a" onclick="setAccent('#ff9d4a','#ffb46f','rgba(255,157,74,0.4)')"></div>
+        <div class="color-choice" style="background:#4ad9ff" onclick="setAccent('#4ad9ff','#6fe3ff','rgba(74,217,255,0.4)')"></div>
+      </div>
+    </div>
+    <button class="icon-btn" id="themeBtn" onclick="toggleTheme()" title="Сменить тему">🌙</button>
+  </div>
+</header>
+
+<div class="container">
+  <div id="page-home">
+    <h1>RPL</h1>
+    <p class="subtitle">COUNTER-STRIKE ROSTER</p>
+
+    <div id="statsBar" class="stats-bar"></div>
+    <div id="top3Block" class="top3-block"></div>
+    <div id="winnerBlock"></div>
+    <div id="newsBlock"></div>
+
+    <div id="adminPanel" class="admin-section" style="display:none;">
+      <h2>➕ Добавить игрока</h2>
+      <div class="form-group"><input type="text" id="nick" placeholder="Ник"></div>
+      <div class="form-group"><input type="text" id="realName" placeholder="Настоящее имя"></div>
+      <div class="form-group"><input type="text" id="role" placeholder="Роль (AWP / Rifler / IGL)"></div>
+      <div class="form-group"><input type="text" id="photoUrl" placeholder="URL фото"></div>
+      <div class="form-group"><input type="text" id="country" placeholder="Страна (на англ., напр. Russia)"></div>
+      <div class="form-group"><input type="text" id="bio" placeholder="Краткое описание"></div>
+      <button class="btn btn-primary" onclick="addPlayer()">Сохранить игрока</button>
+
+      <h3>👥 Создать команду</h3>
+      <div class="form-group"><input type="text" id="teamName" placeholder="Название команды"></div>
+      <div id="teamPlayersList" class="checkbox-list"></div>
+      <br>
+      <button class="btn btn-primary" onclick="addTeam()">Сохранить команду</button>
+
+      <h3>🏆 Добавить турнир</h3>
+      <div class="form-group"><input type="text" id="tName" placeholder="Название турнира"></div>
+      <div class="form-group"><input type="date" id="tDate"></div>
+      <div class="form-group"><input type="number" id="tPrize" placeholder="Призовой фонд ($)"></div>
+      <div class="form-group"><input type="text" id="tDesc" placeholder="Описание"></div>
+      <div class="form-group"><input type="text" id="tBanner" placeholder="URL баннера турнира (необязательно)"></div>
+      <div class="form-group"><select id="tWinner"><option value="">Победитель (игрок)</option></select></div>
+      <div class="form-group"><select id="tMvp"><option value="">MVP (игрок)</option></select></div>
+      <label style="color:var(--text-muted); font-size:13px;"><input type="checkbox" id="tLatest"> Это последний турнир</label>
+      <br><br>
+      <button class="btn btn-primary" onclick="addTournament()">Сохранить турнир</button>
+
+      <h3>⚔️ Добавить матч</h3>
+      <div class="form-group"><select id="mTournament"><option value="">Турнир</option></select></div>
+      <div class="form-group"><input type="text" id="mRound" placeholder="Название раунда"></div>
+      <div class="form-group"><select id="mFormat"><option value="BO1">BO1</option><option value="BO3" selected>BO3</option><option value="BO5">BO5</option></select></div>
+      <div class="form-group"><select id="mTeam1"><option value="">Команда 1</option></select></div>
+      <div class="form-group"><select id="mTeam2"><option value="">Команда 2</option></select></div>
+      <h3>Карты</h3>
+      <div id="matchMapsContainer"></div>
+      <button class="btn btn-primary" onclick="addMatch()">Сохранить матч</button>
+
+      <h3>📊 Статистика по картам</h3>
+      <div class="form-group"><select id="msTournament"><option value="">Турнир</option></select></div>
+      <div class="form-group"><select id="msPlayer"><option value="">Игрок</option></select></div>
+      <div class="form-group"><input type="text" id="msMap" placeholder="Карта"></div>
+      <div class="form-group"><input type="number" id="msKills" placeholder="Киллы"></div>
+      <div class="form-group"><input type="number" id="msDeaths" placeholder="Смерти"></div>
+      <div class="form-group"><input type="number" id="msPrize" placeholder="Призовые ($)"></div>
+      <button class="btn btn-primary" onclick="addMapStat()">Сохранить карту</button>
+
+      <h3>📰 Новость и хайлайты</h3>
+      <div class="form-group"><textarea id="newsText" placeholder="Текст новости"></textarea></div>
+      <div id="highlightsInputs">
+        <div class="highlight-input-row">
+          <input type="text" class="hl-url" placeholder="URL видео/картинки">
+          <input type="text" class="hl-title" placeholder="Подпись">
+        </div>
+      </div>
+      <button class="btn btn-secondary btn-small" onclick="addHighlightInput()">+ Ещё хайлайт</button>
+      <br><br>
+      <button class="btn btn-primary" onclick="saveNews()">Сохранить новость</button>
+
+      <h3>🗂 Управление</h3>
+      <button class="btn btn-secondary" onclick="openManagePlayers()">Игроки</button>
+      <button class="btn btn-secondary" onclick="openManageTeams()">Команды</button>
+      <button class="btn btn-secondary" onclick="openManageTournaments()">Турниры</button>
+      <button class="btn btn-secondary" onclick="openManageMatches()">Матчи</button>
+      <button class="btn btn-secondary" onclick="openManageMapStats()">Статистика карт</button>
+
+      <button class="btn btn-danger" onclick="logout()" style="margin-top:20px;">Выйти</button>
+      <div id="adminStatus" class="status-msg"></div>
+    </div>
+
+    <div id="loginPanel" class="admin-section" style="display:none;">
+      <h2>🔐 Вход для администратора</h2>
+      <div class="form-group"><input type="email" id="email" placeholder="Email"></div>
+      <div class="form-group"><input type="password" id="password" placeholder="Пароль"></div>
+      <button class="btn btn-primary" onclick="login()">Войти</button>
+      <button class="btn btn-secondary" onclick="hideLogin()">Отмена</button>
+      <div id="loginStatus" class="status-msg"></div>
+    </div>
+
+    <div id="guestBar" style="margin-bottom:30px; text-align:right;">
+      <button class="btn btn-secondary" onclick="showLogin()">Войти как админ</button>
+    </div>
+  </div>
+
+  <div id="page-players" style="display:none;">
+    <h1>Игроки</h1>
+    <p class="subtitle">ALL PLAYERS</p>
+    <div class="search-box">
+      <input type="text" id="searchInput" placeholder="🔍 Поиск по нику..." oninput="filterPlayers()">
+      <select id="sortSelect" onchange="filterPlayers()">
+        <option value="nickname">Сортировка: по нику</option>
+        <option value="kd">Сортировка: по K/D</option>
+        <option value="prize">Сортировка: по призовым</option>
+      </select>
+    </div>
+    <div id="playersList"><div class="loader"><span class="spinner"></span>Загрузка игроков...</div></div>
+    <div class="pages" id="playersPages"></div>
+  </div>
+
+  <div id="page-tournaments" style="display:none;">
+    <h1>Турниры</h1>
+    <p class="subtitle">ALL TOURNAMENTS</p>
+    <div id="tournamentsList"><div class="loader"><span class="spinner"></span>Загрузка турниров...</div></div>
+  </div>
+
+  <div id="page-teams" style="display:none;">
+    <h1>Команды</h1>
+    <p class="subtitle">ALL TEAMS</p>
+    <div id="teamsList"><div class="loader"><span class="spinner"></span>Загрузка команд...</div></div>
+  </div>
+</div>
+
+<div id="playerModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="playerModalContent"></div>
+</div>
+
+<div id="tournamentModal" class="modal-overlay" onclick="if(event.target===this)closeTournamentModal()">
+  <div class="modal" id="tournamentModalContent"></div>
+</div>
+
+<div id="manageModal" class="modal-overlay" onclick="if(event.target===this)closeManageModal()">
+  <div class="modal" id="manageModalContent"></div>
+</div>
+
+<div id="teamModal" class="modal-overlay" onclick="if(event.target===this)closeTeamModal()">
+  <div class="modal" id="teamModalContent"></div>
+</div>
+
+<button id="backToTop" onclick="window.scrollTo({top:0,behavior:'smooth'})">↑</button>
+
+<footer>© RPL Team — Counter-Strike Roster</footer>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://fupiurmwkfpicfvigchd.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_N-p4CNsypVEzaPKxnzH8mw_UPu43izZ';
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let allPlayers = [];
+  let allPlayersFull = [];
+  let latestTournamentId = null;
+  let allTeams = [];
+  let allTournaments = [];
+  let currentPage = 1;
+  const PLAYERS_PER_PAGE = 12;
+
+  window.addEventListener('load', () => {
+    setTimeout(() => document.getElementById('loader').classList.add('hidden'), 800);
+  });
+
+  function initParticles() {
+    const canvas = document.getElementById('particlesCanvas');
+    const ctx = canvas.getContext('2d');
+    let particles = [];
+    function resize() { canvas.width = window.innerWidth; canvas.height = window.innerHeight; }
+    resize();
+    window.addEventListener('resize', resize);
+    for (let i = 0; i < 80; i++) {
+      particles.push({
+        x: Math.random() * canvas.width,
+        y: Math.random() * canvas.height,
+        vx: (Math.random() - 0.5) * 0.3,
+        vy: (Math.random() - 0.5) * 0.3,
+        r: Math.random() * 1.8 + 0.3
+      });
+    }
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const accent = getComputedStyle(document.documentElement).getPropertyValue('--accent').trim() || '#4a9eff';
+      ctx.fillStyle = accent;
+      particles.forEach(p => {
+        p.x += p.vx; p.y += p.vy;
+        if (p.x < 0 || p.x > canvas.width) p.vx *= -1;
+        if (p.y < 0 || p.y > canvas.height) p.vy *= -1;
+        ctx.globalAlpha = 0.4;
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+        ctx.fill();
+      });
+      ctx.globalAlpha = 1;
+      requestAnimationFrame(draw);
+    }
+    draw();
+  }
+  initParticles();
+
+  function toggleTheme() {
+    const html = document.documentElement;
+    const current = html.getAttribute('data-theme');
+    const next = current === 'dark' ? 'light' : 'dark';
+    html.setAttribute('data-theme', next);
+    document.getElementById('themeBtn').textContent = next === 'dark' ? '🌙' : '☀️';
+    localStorage.setItem('rpl-theme', next);
+  }
+
+  function loadTheme() {
+    const saved = localStorage.getItem('rpl-theme') || 'dark';
+    document.documentElement.setAttribute('data-theme', saved);
+    document.getElementById('themeBtn').textContent = saved === 'dark' ? '🌙' : '☀️';
+  }
+  loadTheme();
+
+  function toggleColorMenu() {
+    document.getElementById('colorMenu').classList.toggle('open');
+  }
+
+  function setAccent(color, hover, glow) {
+    document.documentElement.style.setProperty('--accent', color);
+    document.documentElement.style.setProperty('--accent-hover', hover);
+    document.documentElement.style.setProperty('--glow', glow);
+    document.getElementById('colorDot').style.background = color;
+    localStorage.setItem('rpl-accent', color);
+    localStorage.setItem('rpl-accent-hover', hover);
+    localStorage.setItem('rpl-glow', glow);
+    document.getElementById('colorMenu').classList.remove('open');
+  }
+
+  function loadAccent() {
+    const c = localStorage.getItem('rpl-accent');
+    const h = localStorage.getItem('rpl-accent-hover');
+    const g = localStorage.getItem('rpl-glow');
+    if (c && h && g) setAccent(c, h, g);
+  }
+  loadAccent();
+
+  document.addEventListener('click', (e) => {
+    if (!e.target.closest('.color-picker-wrap')) {
+      document.getElementById('colorMenu').classList.remove('open');
+    }
+  });
+
+  window.addEventListener('scroll', () => {
+    const btn = document.getElementById('backToTop');
+    if (window.scrollY > 400) btn.classList.add('show');
+    else btn.classList.remove('show');
+  });
+
+  function animateCounter(el, target) {
+    let current = 0;
+    const step = Math.max(1, Math.ceil(target / 40));
+    const timer = setInterval(() => {
+      current += step;
+      if (current >= target) { current = target; clearInterval(timer); }
+      el.textContent = current;
+    }, 30);
+  }
+
+  function goHome() { switchPage('home'); window.scrollTo({top:0,behavior:'smooth'}); }
+
+  function switchPage(page) {
+    document.querySelectorAll('[id^="page-"]').forEach(el => el.style.display = 'none');
+    document.getElementById('page-' + page).style.display = 'block';
+    document.querySelectorAll('.nav-btn').forEach(btn => {
+      btn.classList.toggle('active', btn.dataset.page === page);
+    });
+    if (page === 'players') loadPlayersPage();
+    if (page === 'tournaments') loadTournamentsPage();
+    if (page === 'teams') loadTeamsPage();
+    window.scrollTo({top: 0, behavior: 'smooth'});
+  }
+
+  function youtubeEmbed(url) {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+  }
+
+  function youtubeThumb(url) {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+    return m ? `https://img.youtube.com/vi/${m[1]}/hqdefault.jpg` : null;
+  }
+
+  function isImage(url) {
+    return /\.(jpg|jpeg|png|gif|webp|avif)(\?.*)?$/i.test(url);
+  }
+
+  function calcKD(kills, deaths) {
+    if (deaths === 0) return kills > 0 ? kills.toFixed(2) : '0.00';
+    return (kills / deaths).toFixed(2);
+  }
+
+  function mapIcon(name) {
+    if (!name) return '<span class="map-icon"></span>';
+    const n = name.toLowerCase();
+    let cls = '';
+    if (n.includes('mirage')) cls = 'mirage';
+    else if (n.includes('inferno')) cls = 'inferno';
+    else if (n.includes('nuke')) cls = 'nuke';
+    else if (n.includes('overpass')) cls = 'overpass';
+    else if (n.includes('dust')) cls = 'dust2';
+    else if (n.includes('ancient')) cls = 'ancient';
+    else if (n.includes('vertigo')) cls = 'vertigo';
+    else if (n.includes('anubis')) cls = 'anubis';
+    else if (n.includes('train')) cls = 'train';
+    return `<span class="map-icon ${cls}"></span>`;
+  }
+
+  function roleIcon(role) {
+    if (!role) return '';
+    const r = role.toLowerCase();
+    if (r.includes('awp') || r.includes('sniper')) return '<span class="role-icon">🎯</span>';
+    if (r.includes('igl') || r.includes('captain')) return '<span class="role-icon">👑</span>';
+    if (r.includes('support')) return '<span class="role-icon">🛡️</span>';
+    if (r.includes('entry')) return '<span class="role-icon">⚡</span>';
+    if (r.includes('lurk')) return '<span class="role-icon">🕵️</span>';
+    return '<span class="role-icon">🔫</span>';
+  }
+
+  function countryToFlag(country) {
+    if (!country) return '';
+    const map = {
+      'russia': '🇷🇺', 'russian federation': '🇷🇺', 'ru': '🇷🇺',
+      'ukraine': '🇺🇦', 'ua': '🇺🇦', 'kazakhstan': '🇰🇿', 'kz': '🇰🇿',
+      'belarus': '🇧🇾', 'by': '🇧🇾', 'germany': '🇩🇪', 'de': '🇩🇪',
+      'france': '🇫🇷', 'fr': '🇫🇷', 'usa': '🇺🇸', 'united states': '🇺🇸', 'us': '🇺🇸',
+      'uk': '🇬🇧', 'united kingdom': '🇬🇧', 'england': '🇬🇧',
+      'poland': '🇵🇱', 'pl': '🇵🇱', 'sweden': '🇸🇪', 'se': '🇸🇪',
+      'denmark': '🇩🇰', 'dk': '🇩🇰', 'finland': '🇫🇮', 'fi': '🇫🇮',
+      'norway': '🇳🇴', 'no': '🇳🇴', 'brazil': '🇧🇷', 'br': '🇧🇷',
+      'argentina': '🇦🇷', 'ar': '🇦🇷', 'china': '🇨🇳', 'cn': '🇨🇳',
+      'japan': '🇯🇵', 'jp': '🇯🇵', 'south korea': '🇰🇷', 'kr': '🇰🇷',
+      'turkey': '🇹🇷', 'tr': '🇹🇷', 'spain': '🇪🇸', 'es': '🇪🇸',
+      'italy': '🇮🇹', 'it': '🇮🇹', 'portugal': '🇵🇹', 'pt': '🇵🇹',
+      'netherlands': '🇳🇱', 'nl': '🇳🇱', 'belgium': '🇧🇪', 'be': '🇧🇪',
+      'czech': '🇨🇿', 'czechia': '🇨🇿', 'cz': '🇨🇿',
+      'slovakia': '🇸🇰', 'sk': '🇸🇰', 'hungary': '🇭🇺', 'hu': '🇭🇺',
+      'romania': '🇷🇴', 'ro': '🇷🇴', 'bulgaria': '🇧🇬', 'bg': '🇧🇬',
+      'serbia': '🇷🇸', 'rs': '🇷🇸', 'croatia': '🇭🇷', 'hr': '🇭🇷',
+      'slovenia': '🇸🇮', 'si': '🇸🇮', 'austria': '🇦🇹', 'at': '🇦🇹',
+      'switzerland': '🇨🇭', 'ch': '🇨🇭', 'australia': '🇦🇺', 'au': '🇦🇺',
+      'canada': '🇨🇦', 'ca': '🇨🇦', 'mexico': '🇲🇽', 'mx': '🇲🇽',
+      'india': '🇮🇳', 'in': '🇮🇳', 'uzbekistan': '🇺🇿', 'uz': '🇺🇿',
+      'kyrgyzstan': '🇰🇬', 'kg': '🇰🇬', 'tajikistan': '🇹🇯', 'tj': '🇹🇯',
+      'turkmenistan': '🇹🇲', 'tm': '🇹🇲', 'armenia': '🇦🇲', 'am': '🇦🇲',
+      'azerbaijan': '🇦🇿', 'az': '🇦🇿', 'georgia': '🇬🇪', 'ge': '🇬🇪',
+      'moldova': '🇲🇩', 'md': '🇲🇩', 'latvia': '🇱🇻', 'lv': '🇱🇻',
+      'lithuania': '🇱🇹', 'lt': '🇱🇹', 'estonia': '🇪🇪', 'ee': '🇪🇪'
+    };
+    return map[country.toLowerCase().trim()] || '🏴';
+  }
+
+  async function loadStatsBar() {
+    const [playersRes, tournamentsRes, matchesRes] = await Promise.all([
+      db.from('players').select('id', { count: 'exact', head: true }),
+      db.from('tournaments').select('id', { count: 'exact', head: true }),
+      db.from('matches').select('id', { count: 'exact', head: true })
+    ]);
+    const bar = document.getElementById('statsBar');
+    bar.innerHTML = `
+      <div class="stat-box"><div class="stat-value" id="statPlayers">0</div><div class="stat-label">Игроков</div></div>
+      <div class="stat-box"><div class="stat-value" id="statTournaments">0</div><div class="stat-label">Турниров</div></div>
+      <div class="stat-box"><div class="stat-value" id="statMatches">0</div><div class="stat-label">Матчей</div></div>
+    `;
+    animateCounter(document.getElementById('statPlayers'), playersRes.count || 0);
+    animateCounter(document.getElementById('statTournaments'), tournamentsRes.count || 0);
+    animateCounter(document.getElementById('statMatches'), matchesRes.count || 0);
+  }
+
+  async function loadTop3() {
+    const block = document.getElementById('top3Block');
+    const { data: players } = await db.from('players').select('*');
+    if (!players || players.length === 0) { block.innerHTML = ''; return; }
+    const { data: stats } = await db.from('map_stats').select('player_id, kills, deaths');
+    const byPlayer = {};
+    (stats || []).forEach(s => {
+      if (!byPlayer[s.player_id]) byPlayer[s.player_id] = { kills: 0, deaths: 0 };
+      byPlayer[s.player_id].kills += s.kills;
+      byPlayer[s.player_id].deaths += s.deaths;
+    });
+    const rating = players.map(p => {
+      const s = byPlayer[p.id] || { kills: 0, deaths: 0 };
+      return { ...p, kills: s.kills, deaths: s.deaths, kd: s.deaths === 0 ? s.kills : s.kills / s.deaths };
+    }).filter(p => p.kills > 0).sort((a, b) => b.kd - a.kd).slice(0, 3);
+    if (rating.length === 0) { block.innerHTML = ''; return; }
+    const medals = ['gold', 'silver', 'bronze'];
+    const icons = ['🥇', '🥈', '🥉'];
+    block.innerHTML = `
+      <h2>🏅 Топ-3 по K/D</h2>
+      <div class="top3-grid">
+        ${rating.map((p, i) => `
+          <div class="top3-card" onclick="openPlayer(${p.id})">
+            <div class="rank ${medals[i]}">${icons[i]}</div>
+            <img src="${p.photo_url || ''}" alt="">
+            <div class="nick gradient">${escapeHtml(p.nickname)}</div>
+            <div class="kd">K/D ${p.kd.toFixed(2)} (${p.kills}/${p.deaths})</div>
+          </div>
+        `).join('')}
+      </div>
+    `;
+  }
+
+  async function loadWinner() {
+    const block = document.getElementById('winnerBlock');
+    const { data, error } = await db.from('tournaments').select('*').eq('is_latest', true).limit(1).maybeSingle();
+    if (error || !data) { block.innerHTML = ''; latestTournamentId = null; return; }
+    latestTournamentId = data.id;
+    if (data.winner_player_id) {
+      const { data: winner } = await db.from('players').select('*').eq('id', data.winner_player_id).maybeSingle();
+      if (winner) {
+        block.innerHTML = `
+          <div class="winner-block">
+            <div class="winner-label">Победитель последнего турнира</div>
+            <img class="winner-photo" src="${winner.photo_url || ''}" alt="${escapeHtml(winner.nickname)}">
+            <div class="winner-name">${escapeHtml(winner.nickname)}</div>
+            <button class="tournament-link" onclick="openTournament(${data.id})">${escapeHtml(data.name)}</button>
+          </div>
+        `;
+      }
+    } else {
+      block.innerHTML = `
+        <div class="winner-block">
+          <div class="winner-label">Последний турнир</div>
+          <div class="winner-name">${escapeHtml(data.name)}</div>
+          <button class="tournament-link" onclick="openTournament(${data.id})">Открыть турнир</button>
+        </div>
+      `;
+    }
+    loadNews();
+  }
+
+  async function loadNews() {
+    const block = document.getElementById('newsBlock');
+    if (!latestTournamentId) { block.innerHTML = ''; return; }
+    const { data: news } = await db.from('news').select('*').eq('tournament_id', latestTournamentId).limit(1).maybeSingle();
+    if (!news) { block.innerHTML = ''; return; }
+    const { data: highlights } = await db.from('highlights').select('*').eq('news_id', news.id).order('sort_order', { ascending: true });
+    let highlightsHtml = '';
+    if (highlights && highlights.length > 0) {
+      highlightsHtml = '<div class="highlights-grid">' + highlights.map(h => {
+        const embed = youtubeEmbed(h.url);
+        const thumb = youtubeThumb(h.url);
+        let media = '';
+        if (embed) media = `<iframe src="${embed}" allowfullscreen></iframe>`;
+        else if (isImage(h.url)) media = `<img src="${h.url}" alt="">`;
+        else media = `<video src="${h.url}" controls></video>`;
+        return `<div class="highlight-item">${media}<div class="highlight-caption">${escapeHtml(h.title || '')}</div></div>`;
+      }).join('') + '</div>';
+    }
+    block.innerHTML = `
+      <div class="news-block">
+        <h2>📰 Новости последнего турнира</h2>
+        ${news.text_content ? `<div class="news-text">${escapeHtml(news.text_content)}</div>` : ''}
+        ${highlightsHtml}
+      </div>
+    `;
+  }
+
+  async function loadPlayers() {
+    const { data, error } = await db.from('players').select('*');
+    if (error) return;
+    allPlayers = data || [];
+    const { data: stats } = await db.from('map_stats').select('player_id, kills, deaths, prize_won');
+    const byPlayer = {};
+    (stats || []).forEach(s => {
+      if (!byPlayer[s.player_id]) byPlayer[s.player_id] = { kills: 0, deaths: 0, prize: 0 };
+      byPlayer[s.player_id].kills += s.kills;
+      byPlayer[s.player_id].deaths += s.deaths;
+      byPlayer[s.player_id].prize += parseFloat(s.prize_won) || 0;
+    });
+    allPlayersFull = allPlayers.map(p => {
+      const s = byPlayer[p.id] || { kills: 0, deaths: 0, prize: 0 };
+      return { ...p, kills: s.kills, deaths: s.deaths, prize: s.prize, kd: s.deaths === 0 ? s.kills : s.kills / s.deaths };
+    });
+  }
+
+  async function loadPlayersPage() {
+    await loadPlayers();
+    currentPage = 1;
+    renderPlayersPage();
+  }
+
+  function renderPlayersPage() {
+    const list = document.getElementById('playersList');
+    const query = (document.getElementById('searchInput')?.value || '').trim().toLowerCase();
+    const sort = document.getElementById('sortSelect')?.value || 'nickname';
+    let filtered = allPlayersFull.slice();
+    if (query) filtered = filtered.filter(p => (p.nickname || '').toLowerCase().includes(query));
+    if (sort === 'nickname') filtered.sort((a, b) => (a.nickname || '').localeCompare(b.nickname || ''));
+    else if (sort === 'kd') filtered.sort((a, b) => b.kd - a.kd);
+    else if (sort === 'prize') filtered.sort((a, b) => b.prize - a.prize);
+
+    if (filtered.length === 0) { list.innerHTML = '<div class="loader">Игроки не найдены</div>'; document.getElementById('playersPages').innerHTML = ''; return; }
+
+    const totalPages = Math.ceil(filtered.length / PLAYERS_PER_PAGE);
+    if (currentPage > totalPages) currentPage = 1;
+    const start = (currentPage - 1) * PLAYERS_PER_PAGE;
+    const pageItems = filtered.slice(start, start + PLAYERS_PER_PAGE);
+
+    list.innerHTML = '<div class="players-grid">' + pageItems.map(p => {
+      const top3 = allPlayersFull.slice().sort((a,b)=>b.kd-a.kd).slice(0,3).some(x => x.id === p.id);
+      const flag = countryToFlag(p.country);
+      return `
+      <div class="player-card" onclick="openPlayer(${p.id})">
+        <img src="${p.photo_url || ''}" alt="${escapeHtml(p.nickname)}">
+        <div class="player-nick ${top3 ? 'gradient' : ''}">${escapeHtml(p.nickname)}</div>
+        ${p.role ? `<div class="player-role">${roleIcon(p.role)}${escapeHtml(p.role)}</div>` : ''}
+        ${p.real_name ? `<div class="player-real-name">${escapeHtml(p.real_name)} ${flag ? flag : ''}</div>` : ''}
+      </div>
+    `;
+    }).join('') + '</div>';
+
+    let pagesHtml = '';
+    if (totalPages > 1) {
+      for (let i = 1; i <= totalPages; i++) {
+        pagesHtml += `<button class="${i === currentPage ? 'active' : ''}" onclick="goToPage(${i})">${i}</button>`;
+      }
+    }
+    document.getElementById('playersPages').innerHTML = pagesHtml;
+  }
+
+  function goToPage(p) { currentPage = p; renderPlayersPage(); window.scrollTo({top: 0, behavior: 'smooth'}); }
+  function filterPlayers() { currentPage = 1; renderPlayersPage(); }
+
+  async function openPlayer(id) {
+    const { data: p } = await db.from('players').select('*').eq('id', id).maybeSingle();
+    if (!p) return;
+    const { data: mapStats } = await db.from('map_stats').select('*, tournaments(name, date)').eq('player_id', id).order('created_at', { ascending: false });
+    let totalKills = 0, totalDeaths = 0, totalPrize = 0;
+    const byTournament = {};
+    if (mapStats) mapStats.forEach(m => {
+      totalKills += m.kills; totalDeaths += m.deaths;
+      totalPrize += parseFloat(m.prize_won) || 0;
+      const tName = m.tournaments?.name || 'Без турнира';
+      if (!byTournament[tName]) byTournament[tName] = [];
+      byTournament[tName].push(m);
+    });
+    const overallKD = calcKD(totalKills, totalDeaths);
+    let tournamentsHtml = '';
+    if (Object.keys(byTournament).length > 0) {
+      tournamentsHtml = Object.keys(byTournament).map(tName => {
+        const maps = byTournament[tName];
+        let tK = 0, tD = 0, tP = 0;
+        maps.forEach(m => { tK += m.kills; tD += m.deaths; tP += parseFloat(m.prize_won) || 0; });
+        const mapsHtml = maps.map(m => `
+          <div class="t-info" style="display:flex; justify-content:space-between;">
+            <span>${mapIcon(m.map_name)}${escapeHtml(m.map_name)}</span>
+            <span>${m.kills}/${m.deaths} · K/D ${calcKD(m.kills, m.deaths)}${m.prize_won ? ' · $' + m.prize_won : ''}</span>
+          </div>
+        `).join('');
+        return `<div class="tournament-item">
+          <div class="t-name">${escapeHtml(tName)} — K/D ${calcKD(tK, tD)} (${tK}/${tD})</div>
+          ${tP > 0 ? `<div class="t-info" style="color:var(--success);">Призовые: $${tP}</div>` : ''}
+          ${mapsHtml}
+        </div>`;
+      }).join('');
+    } else tournamentsHtml = '<div class="t-info" style="color:var(--text-muted);">Нет данных о турнирах</div>';
+    const flag = countryToFlag(p.country);
+    document.getElementById('playerModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <div class="breadcrumbs"><span onclick="closeModal()">Игроки</span> / ${escapeHtml(p.nickname)}</div>
+      <img class="modal-photo" src="${p.photo_url || ''}" alt="">
+      <h2>${escapeHtml(p.nickname)}</h2>
+      <div class="role">${roleIcon(p.role)}${escapeHtml(p.role || '')}</div>
+      <div class="info-row"><span>Настоящее имя</span><span>${escapeHtml(p.real_name || '—')}</span></div>
+      <div class="info-row"><span>Страна</span><span>${flag} ${escapeHtml(p.country || '—')}</span></div>
+      <div class="info-row"><span>Общий K/D</span><span>${overallKD} (${totalKills}/${totalDeaths})</span></div>
+      <div class="info-row"><span>Всего заработано</span><span>$${totalPrize}</span></div>
+      <h3>🏆 Турниры</h3>${tournamentsHtml}
+    `;
+    document.getElementById('playerModal').classList.add('active');
+  }
+
+  function closeModal() { document.getElementById('playerModal').classList.remove('active'); }
+
+  async function loadTournamentsPage() {
+    const list = document.getElementById('tournamentsList');
+    const { data } = await db.from('tournaments').select('*').order('date', { ascending: false });
+    allTournaments = data || [];
+    if (!data || data.length === 0) { list.innerHTML = '<div class="loader">Турниров пока нет</div>'; return; }
+    list.innerHTML = '<div class="tournaments-grid">' + data.map(t => `
+      <div class="tournament-card" onclick="openTournament(${t.id})">
+        <h3>${escapeHtml(t.name)} ${t.is_latest ? '🏆' : ''}</h3>
+        <div class="meta">${t.date || 'Без даты'} · $${t.prize_pool || 0}</div>
+      </div>
+    `).join('') + '</div>';
+  }
+
+  async function loadTeamsPage() {
+    const list = document.getElementById('teamsList');
+    const { data } = await db.from('teams').select('*').order('name');
+    allTeams = data || [];
+    if (!data || data.length === 0) { list.innerHTML = '<div class="loader">Команд пока нет</div>'; return; }
+    const teamsWithCount = await Promise.all(data.map(async t => {
+      const { count } = await db.from('team_players').select('id', { count: 'exact', head: true }).eq('team_id', t.id);
+      return { ...t, count: count || 0 };
+    }));
+    list.innerHTML = '<div class="teams-grid">' + teamsWithCount.map(t => `
+      <div class="team-card" onclick="openTeam(${t.id})">
+        <h3>${escapeHtml(t.name)}</h3>
+        <div class="meta">Игроков: ${t.count}</div>
+      </div>
+    `).join('') + '</div>';
+  }
+  async function openTournament(id) {
+    const { data: t } = await db.from('tournaments').select('*').eq('id', id).maybeSingle();
+    if (!t) return;
+    const { data: matches } = await db.from('matches').select('*').eq('tournament_id', id).order('created_at', { ascending: true });
+    const { data: allStats } = await db.from('map_stats').select('player_id, kills, deaths, players(nickname, photo_url)').eq('tournament_id', id);
+
+    const byPlayer = {};
+    (allStats || []).forEach(s => {
+      if (!byPlayer[s.player_id]) byPlayer[s.player_id] = { kills: 0, deaths: 0, nickname: s.players?.nickname || '', photo: s.players?.photo_url || '' };
+      byPlayer[s.player_id].kills += s.kills;
+      byPlayer[s.player_id].deaths += s.deaths;
+    });
+    let mvp = null;
+    Object.keys(byPlayer).forEach(pid => {
+      const d = byPlayer[pid];
+      const kd = d.deaths === 0 ? d.kills : d.kills / d.deaths;
+      if (!mvp || kd > mvp.kd) mvp = { ...d, kd };
+    });
+
+    let mvpHtml = '';
+    if (mvp && mvp.kills > 0) {
+      mvpHtml = `
+        <div class="mvp-big-block">
+          <div class="mvp-label">👑 MVP Турнира</div>
+          <img src="${mvp.photo || ''}" alt="">
+          <div class="mvp-nick">${escapeHtml(mvp.nickname)}</div>
+          <div class="mvp-kd">K/D ${mvp.kd.toFixed(2)} (${mvp.kills}/${mvp.deaths})</div>
+        </div>
+      `;
+    }
+
+    let bannerHtml = '';
+    if (t.banner_url) {
+      bannerHtml = `<img src="${t.banner_url}" style="width:100%; border-radius:12px; margin-bottom:20px; aspect-ratio:16/6; object-fit:cover;">`;
+    }
+
+    let matchesHtml = '';
+    if (matches && matches.length > 0) {
+      const rounds = {};
+      matches.forEach(m => {
+        if (!rounds[m.round_name]) rounds[m.round_name] = [];
+        rounds[m.round_name].push(m);
+      });
+      matchesHtml = Object.keys(rounds).map(rName => {
+        return `<h3>${escapeHtml(rName)}</h3>` + rounds[rName].map(m => `<div class="match-box" id="match-${m.id}"><div class="loader"><span class="spinner"></span>Загрузка...</div></div>`).join('');
+      }).join('');
+      setTimeout(async () => { for (const m of matches) await renderMatchInTournament(m.id); }, 50);
+    } else matchesHtml = '<div class="t-info" style="color:var(--text-muted);">Матчей пока нет</div>';
+
+    document.getElementById('tournamentModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeTournamentModal()">×</button>
+      <div class="breadcrumbs"><span onclick="closeTournamentModal()">Турниры</span> / ${escapeHtml(t.name)}</div>
+      ${bannerHtml}
+      <h2>${escapeHtml(t.name)}</h2>
+      <div class="info-row"><span>Дата</span><span>${t.date || '—'}</span></div>
+      <div class="info-row"><span>Призовой фонд</span><span>$${t.prize_pool || 0}</span></div>
+      ${mvpHtml}
+      <h3>⚔️ Матчи</h3>
+      ${matchesHtml}
+      ${t.description ? `<h3>Описание</h3><div class="t-info">${escapeHtml(t.description)}</div>` : ''}
+    `;
+    document.getElementById('tournamentModal').classList.add('active');
+  }
+
+  async function renderMatchInTournament(matchId) {
+    const box = document.getElementById('match-' + matchId);
+    if (!box) return;
+    const { data: m } = await db.from('matches').select('*, team1:team1_id(name), team2:team2_id(name)').eq('id', matchId).maybeSingle();
+    if (!m) { box.innerHTML = '<div class="t-info">Матч не найден</div>'; return; }
+    const { data: maps } = await db.from('match_maps').select('*').eq('match_id', matchId).order('map_order', { ascending: true });
+
+    let wins1 = 0, wins2 = 0;
+    (maps || []).forEach(mp => { if (mp.score1 > mp.score2) wins1++; else if (mp.score2 > mp.score1) wins2++; });
+    const winnerId = wins1 > wins2 ? m.team1_id : (wins2 > wins1 ? m.team2_id : null);
+
+    const t1Roster = await getTeamRosterStr(m.team1_id);
+    const t2Roster = await getTeamRosterStr(m.team2_id);
+    const mapsHtml = (maps || []).map(mp => `<div><span>${mapIcon(mp.map_name)}${escapeHtml(mp.map_name)}${mp.picked_by ? ' (' + escapeHtml(mp.picked_by) + ')' : ''}</span><strong>${mp.score1} : ${mp.score2}</strong></div>`).join('');
+
+    box.innerHTML = `
+      <div class="match-header">${escapeHtml(m.format || 'BO3')} · ${maps ? maps.length : 0} карт</div>
+      <div class="team-bracket ${winnerId === m.team1_id ? 'winner' : ''}" onclick="openTeam(${m.team1_id})" title="${escapeHtml(t1Roster)}">
+        <span>${escapeHtml(m.team1?.name || '—')}</span>
+        <span style="margin-left:auto; color:var(--success); font-weight:700;">${wins1}</span>
+      </div>
+      <div class="team-bracket ${winnerId === m.team2_id ? 'winner' : ''}" onclick="openTeam(${m.team2_id})" title="${escapeHtml(t2Roster)}">
+        <span>${escapeHtml(m.team2?.name || '—')}</span>
+        <span style="margin-left:auto; color:var(--success); font-weight:700;">${wins2}</span>
+      </div>
+      <div class="maps-list">${mapsHtml}</div>
+    `;
+  }
+
+  async function getTeamRosterStr(teamId) {
+    if (!teamId) return '';
+    const { data } = await db.from('team_players').select('players(nickname)').eq('team_id', teamId);
+    return (data || []).map(x => x.players?.nickname).filter(Boolean).join(', ');
+  }
+
+  async function openTeam(teamId) {
+    if (!teamId) return;
+    const { data: t } = await db.from('teams').select('*').eq('id', teamId).maybeSingle();
+    if (!t) return;
+    const { data: tp } = await db.from('team_players').select('players(*)').eq('team_id', teamId);
+    const players = (tp || []).map(x => x.players).filter(Boolean);
+    const playersHtml = players.map(p => {
+      const flag = countryToFlag(p.country);
+      return `
+        <div class="tournament-item" style="display:flex; align-items:center; gap:12px; cursor:pointer;" onclick="closeTeamModal(); openPlayer(${p.id})">
+          <img src="${p.photo_url || ''}" style="width:50px; height:50px; border-radius:50%; object-fit:cover;">
+          <div>
+            <div style="color:var(--text); font-weight:700;">${escapeHtml(p.nickname)}</div>
+            <div style="color:var(--text-muted); font-size:12px;">${escapeHtml(p.real_name || '')}${p.role ? ' · ' + escapeHtml(p.role) : ''} ${flag ? '· ' + flag : ''}</div>
+          </div>
+        </div>
+      `;
+    }).join('');
+    document.getElementById('teamModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeTeamModal()">×</button>
+      <div class="breadcrumbs"><span onclick="closeTeamModal()">Команды</span> / ${escapeHtml(t.name)}</div>
+      <h2>${escapeHtml(t.name)}</h2>
+      <h3>Состав (${players.length})</h3>
+      ${playersHtml || '<div class="t-info">Нет игроков</div>'}
+    `;
+    document.getElementById('teamModal').classList.add('active');
+  }
+
+  function closeTeamModal() { document.getElementById('teamModal').classList.remove('active'); }
+  function closeTournamentModal() { document.getElementById('tournamentModal').classList.remove('active'); }
+
+  function addHighlightInput() {
+    const c = document.getElementById('highlightsInputs');
+    const row = document.createElement('div');
+    row.className = 'highlight-input-row';
+    row.innerHTML = `<input type="text" class="hl-url" placeholder="URL видео/картинки"><input type="text" class="hl-title" placeholder="Подпись">`;
+    c.appendChild(row);
+  }
+
+  async function addMapStat() {
+    const s = document.getElementById('adminStatus');
+    const tId = document.getElementById('msTournament').value;
+    const pId = document.getElementById('msPlayer').value;
+    const map = document.getElementById('msMap').value.trim();
+    const k = parseInt(document.getElementById('msKills').value) || 0;
+    const d = parseInt(document.getElementById('msDeaths').value) || 0;
+    const pr = parseFloat(document.getElementById('msPrize').value) || 0;
+    if (!tId || !pId || !map) { s.textContent = 'Заполни все поля'; s.className = 'status-msg error'; return; }
+    const { error } = await db.from('map_stats').insert([{ tournament_id: +tId, player_id: +pId, map_name: map, kills: k, deaths: d, prize_won: pr }]);
+    if (error) { s.textContent = 'Ошибка: ' + error.message; s.className = 'status-msg error'; }
+    else {
+      s.textContent = '✅ Сохранено'; s.className = 'status-msg success';
+      document.getElementById('msMap').value = ''; document.getElementById('msKills').value = '';
+      document.getElementById('msDeaths').value = ''; document.getElementById('msPrize').value = '';
+      loadTop3(); loadStatsBar();
+    }
+  }
+
+  async function addTeam() {
+    const s = document.getElementById('adminStatus');
+    const name = document.getElementById('teamName').value.trim();
+    if (!name) { s.textContent = 'Название обязательно'; s.className = 'status-msg error'; return; }
+    const { data: created, error } = await db.from('teams').insert([{ name }]).select().single();
+    if (error) { s.textContent = 'Ошибка: ' + error.message; s.className = 'status-msg error'; return; }
+    const checked = document.querySelectorAll('#teamPlayersList input:checked');
+    const payload = Array.from(checked).map(cb => ({ team_id: created.id, player_id: parseInt(cb.value) }));
+    if (payload.length > 0) await db.from('team_players').insert(payload);
+    s.textContent = '✅ Команда создана'; s.className = 'status-msg success';
+    document.getElementById('teamName').value = '';
+    document.querySelectorAll('#teamPlayersList input').forEach(cb => cb.checked = false);
+    refreshSelects();
+  }
+
+  function buildMatchMaps() {
+    const format = document.getElementById('mFormat').value;
+    const count = format === 'BO1' ? 1 : format === 'BO3' ? 3 : 5;
+    const c = document.getElementById('matchMapsContainer');
+    c.innerHTML = '';
+    for (let i = 0; i < count; i++) {
+      const row = document.createElement('div');
+      row.className = 'match-map-row';
+      row.innerHTML = `
+        <input class="mm-map" placeholder="Карта ${i + 1}">
+        <select class="mm-pick">
+          <option value="Team 1">Team 1</option>
+          <option value="Team 2">Team 2</option>
+          <option value="Decider">Decider</option>
+        </select>
+        <input class="mm-score" type="number" placeholder="Счёт 1">
+        <input class="mm-score" type="number" placeholder="Счёт 2">
+      `;
+      c.appendChild(row);
+    }
+  }
+
+  async function addMatch() {
+    const s = document.getElementById('adminStatus');
+    const tId = document.getElementById('mTournament').value;
+    const round = document.getElementById('mRound').value.trim();
+    const format = document.getElementById('mFormat').value;
+    const team1 = document.getElementById('mTeam1').value;
+    const team2 = document.getElementById('mTeam2').value;
+    if (!tId || !round || !team1 || !team2) { s.textContent = 'Заполни турнир, раунд и команды'; s.className = 'status-msg error'; return; }
+    const { data: created, error } = await db.from('matches').insert([{ tournament_id: +tId, round_name: round, format, team1_id: +team1, team2_id: +team2 }]).select().single();
+    if (error) { s.textContent = 'Ошибка: ' + error.message; s.className = 'status-msg error'; return; }
+    const rows = document.querySelectorAll('#matchMapsContainer .match-map-row');
+    const mapsPayload = [];
+    rows.forEach((r, i) => {
+      const map = r.querySelector('.mm-map').value.trim();
+      if (!map) return;
+      const scores = r.querySelectorAll('.mm-score');
+      mapsPayload.push({
+        match_id: created.id, map_name: map,
+        picked_by: r.querySelector('.mm-pick').value,
+        score1: parseInt(scores[0].value) || 0,
+        score2: parseInt(scores[1].value) || 0,
+        map_order: i
+      });
+    });
+    if (mapsPayload.length > 0) await db.from('match_maps').insert(mapsPayload);
+    s.textContent = '✅ Матч сохранён'; s.className = 'status-msg success';
+    document.getElementById('mRound').value = '';
+    buildMatchMaps();
+    refreshSelects();
+    loadStatsBar();
+  }
+
+  async function saveNews() {
+    const s = document.getElementById('adminStatus');
+    if (!latestTournamentId) { s.textContent = 'Сначала отметь турнир как последний'; s.className = 'status-msg error'; return; }
+    const text = document.getElementById('newsText').value.trim();
+    const { data: ex } = await db.from('news').select('id').eq('tournament_id', latestTournamentId).maybeSingle();
+    let nid;
+    if (ex) { await db.from('news').update({ text_content: text }).eq('id', ex.id); nid = ex.id; await db.from('highlights').delete().eq('news_id', nid); }
+    else { const { data: cr, error } = await db.from('news').insert([{ tournament_id: latestTournamentId, text_content: text }]).select().single(); if (error) { s.textContent = 'Ошибка: ' + error.message; s.className = 'status-msg error'; return; } nid = cr.id; }
+    const rows = document.querySelectorAll('#highlightsInputs .highlight-input-row');
+    const p = [];
+    rows.forEach((r, i) => { const u = r.querySelector('.hl-url').value.trim(); if (u) p.push({ news_id: nid, url: u, title: r.querySelector('.hl-title').value.trim(), sort_order: i }); });
+    if (p.length) await db.from('highlights').insert(p);
+    s.textContent = '✅ Сохранено'; s.className = 'status-msg success';
+    document.getElementById('newsText').value = '';
+    document.getElementById('highlightsInputs').innerHTML = `<div class="highlight-input-row"><input type="text" class="hl-url" placeholder="URL видео/картинки"><input type="text" class="hl-title" placeholder="Подпись"></div>`;
+    loadNews();
+  }
+
+  async function addPlayer() {
+    const s = document.getElementById('adminStatus');
+    const nick = document.getElementById('nick').value.trim();
+    if (!nick) { s.textContent = 'Ник обязателен'; s.className = 'status-msg error'; return; }
+    const payload = {
+      nickname: nick,
+      real_name: document.getElementById('realName').value.trim(),
+      role: document.getElementById('role').value.trim(),
+      photo_url: document.getElementById('photoUrl').value.trim(),
+      country: document.getElementById('country').value.trim(),
+      bio: document.getElementById('bio').value.trim()
+    };
+    const { error } = await db.from('players').insert([payload]);
+    if (error) { s.textContent = 'Ошибка: ' + error.message; s.className = 'status-msg error'; }
+    else {
+      s.textContent = '✅ Игрок добавлен'; s.className = 'status-msg success';
+      ['nick','realName','role','photoUrl','country','bio'].forEach(id => document.getElementById(id).value = '');
+      loadPlayers(); loadWinner(); loadTop3(); loadStatsBar(); refreshSelects();
+    }
+  }
+
+  async function addTournament() {
+    const s = document.getElementById('adminStatus');
+    const name = document.getElementById('tName').value.trim();
+    if (!name) { s.textContent = 'Название обязательно'; s.className = 'status-msg error'; return; }
+    if (document.getElementById('tLatest').checked) await db.from('tournaments').update({ is_latest: false }).eq('is_latest', true);
+    const payload = {
+      name,
+      date: document.getElementById('tDate').value || null,
+      prize_pool: parseInt(document.getElementById('tPrize').value) || 0,
+      description: document.getElementById('tDesc').value.trim(),
+      banner_url: document.getElementById('tBanner').value.trim() || null,
+      winner_player_id: document.getElementById('tWinner').value || null,
+      mvp_player_id: document.getElementById('tMvp').value || null,
+      is_latest: document.getElementById('tLatest').checked
+    };
+    const { error } = await db.from('tournaments').insert([payload]);
+    if (error) { s.textContent = 'Ошибка: ' + error.message; s.className = 'status-msg error'; }
+    else {
+      s.textContent = '✅ Турнир добавлен'; s.className = 'status-msg success';
+      ['tName','tDate','tPrize','tDesc','tBanner'].forEach(id => document.getElementById(id).value = '');
+      document.getElementById('tWinner').value = ''; document.getElementById('tMvp').value = '';
+      document.getElementById('tLatest').checked = false;
+      loadWinner(); loadStatsBar(); refreshSelects();
+    }
+  }
+
+  async function refreshSelects() {
+    const { data: players } = await db.from('players').select('id, nickname');
+    const { data: tournaments } = await db.from('tournaments').select('id, name');
+    const { data: teams } = await db.from('teams').select('id, name');
+
+    const pOpt = (players || []).map(p => `<option value="${p.id}">${escapeHtml(p.nickname)}</option>`).join('');
+    const tOpt = (tournaments || []).map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+    const teamOpt = (teams || []).map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+
+    document.getElementById('tWinner').innerHTML = '<option value="">Победитель (игрок)</option>' + pOpt;
+    document.getElementById('tMvp').innerHTML = '<option value="">MVP (игрок)</option>' + pOpt;
+    document.getElementById('msPlayer').innerHTML = '<option value="">Игрок</option>' + pOpt;
+    document.getElementById('msTournament').innerHTML = '<option value="">Турнир</option>' + tOpt;
+    document.getElementById('mTournament').innerHTML = '<option value="">Турнир</option>' + tOpt;
+    document.getElementById('mTeam1').innerHTML = '<option value="">Команда 1</option>' + teamOpt;
+    document.getElementById('mTeam2').innerHTML = '<option value="">Команда 2</option>' + teamOpt;
+    document.getElementById('teamPlayersList').innerHTML = (players || []).map(p => `<label><input type="checkbox" value="${p.id}">${escapeHtml(p.nickname)}</label>`).join('');
+  }
+
+  async function login() {
+    const s = document.getElementById('loginStatus');
+    const { error } = await db.auth.signInWithPassword({ email: document.getElementById('email').value.trim(), password: document.getElementById('password').value });
+    if (error) { s.textContent = 'Ошибка: ' + error.message; s.className = 'status-msg error'; }
+    else { checkUser(); refreshSelects(); }
+  }
+
+  async function logout() { await db.auth.signOut(); checkUser(); }
+  function showLogin() { document.getElementById('loginPanel').style.display = 'block'; document.getElementById('guestBar').style.display = 'none'; }
+  function hideLogin() { document.getElementById('loginPanel').style.display = 'none'; document.getElementById('guestBar').style.display = 'block'; }
+
+  async function checkUser() {
+    const { data: { user } } = await db.auth.getUser();
+    const a = document.getElementById('adminPanel'), l = document.getElementById('loginPanel'), g = document.getElementById('guestBar');
+    if (user) { a.style.display = 'block'; l.style.display = 'none'; g.style.display = 'none'; refreshSelects(); }
+    else { a.style.display = 'none'; l.style.display = 'none'; g.style.display = 'block'; }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  document.getElementById('mFormat').addEventListener('change', buildMatchMaps);
+
+  async function openManagePlayers() {
+    const { data } = await db.from('players').select('*').order('nickname');
+    document.getElementById('manageModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeManageModal()">×</button>
+      <h2>Игроки</h2>
+      ${(data || []).map(p => `<div class="map-stat-item"><div class="info"><strong>${escapeHtml(p.nickname)}</strong></div><div class="actions"><button class="btn btn-secondary btn-small" onclick="editPlayer(${p.id})">Ред.</button><button class="btn btn-danger btn-small" onclick="deletePlayer(${p.id},'${escapeHtml(p.nickname)}')">Удал.</button></div></div>`).join('')}
+    `;
+    document.getElementById('manageModal').classList.add('active');
+  }
+
+  async function editPlayer(id) {
+    const { data: p } = await db.from('players').select('*').eq('id', id).maybeSingle();
+    if (!p) return;
+    document.getElementById('manageModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeManageModal()">×</button>
+      <h2>Редактировать игрока</h2>
+      <div class="form-group"><input id="epNick" value="${escapeHtml(p.nickname || '')}"></div>
+      <div class="form-group"><input id="epRealName" value="${escapeHtml(p.real_name || '')}"></div>
+      <div class="form-group"><input id="epRole" value="${escapeHtml(p.role || '')}"></div>
+      <div class="form-group"><input id="epPhotoUrl" value="${escapeHtml(p.photo_url || '')}"></div>
+      <div class="form-group"><input id="epCountry" value="${escapeHtml(p.country || '')}"></div>
+      <div class="form-group"><input id="epBio" value="${escapeHtml(p.bio || '')}"></div>
+      <button class="btn btn-primary" onclick="savePlayerEdit(${id})">Сохранить</button>
+      <button class="btn btn-secondary" onclick="openManagePlayers()">Назад</button>
+    `;
+  }
+
+  async function savePlayerEdit(id) {
+    const p = { nickname: document.getElementById('epNick').value.trim(), real_name: document.getElementById('epRealName').value.trim(), role: document.getElementById('epRole').value.trim(), photo_url: document.getElementById('epPhotoUrl').value.trim(), country: document.getElementById('epCountry').value.trim(), bio: document.getElementById('epBio').value.trim() };
+    const { error } = await db.from('players').update(p).eq('id', id);
+    if (error) { alert(error.message); return; }
+    loadPlayers(); loadTop3(); refreshSelects(); openManagePlayers();
+  }
+
+  async function deletePlayer(id, name) {
+    if (!confirm(`Удалить "${name}"?`)) return;
+    await db.from('players').delete().eq('id', id);
+    loadPlayers(); loadTop3(); loadStatsBar(); refreshSelects(); openManagePlayers();
+  }
+
+  async function openManageTeams() {
+    const { data } = await db.from('teams').select('*').order('name');
+    document.getElementById('manageModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeManageModal()">×</button>
+      <h2>Команды</h2>
+      ${(data || []).map(t => `<div class="map-stat-item"><div class="info"><strong>${escapeHtml(t.name)}</strong></div><div class="actions"><button class="btn btn-secondary btn-small" onclick="editTeam(${t.id})">Ред.</button><button class="btn btn-danger btn-small" onclick="deleteTeam(${t.id},'${escapeHtml(t.name)}')">Удал.</button></div></div>`).join('')}
+    `;
+    document.getElementById('manageModal').classList.add('active');
+  }
+
+  async function editTeam(id) {
+    const { data: t } = await db.from('teams').select('*').eq('id', id).maybeSingle();
+    const { data: players } = await db.from('players').select('id, nickname');
+    const { data: current } = await db.from('team_players').select('player_id').eq('team_id', id);
+    const currentIds = (current || []).map(x => x.player_id);
+    document.getElementById('manageModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeManageModal()">×</button>
+      <h2>Редактировать команду</h2>
+      <div class="form-group"><input id="etName2" value="${escapeHtml(t.name || '')}"></div>
+      <div class="checkbox-list" id="etPlayers">
+        ${(players || []).map(p => `<label><input type="checkbox" value="${p.id}" ${currentIds.includes(p.id) ? 'checked' : ''}>${escapeHtml(p.nickname)}</label>`).join('')}
+      </div>
+      <br>
+      <button class="btn btn-primary" onclick="saveTeamEdit(${id})">Сохранить</button>
+      <button class="btn btn-secondary" onclick="openManageTeams()">Назад</button>
+    `;
+  }
+
+  async function saveTeamEdit(id) {
+    const name = document.getElementById('etName2').value.trim();
+    if (!name) { alert('Название обязательно'); return; }
+    await db.from('teams').update({ name }).eq('id', id);
+    await db.from('team_players').delete().eq('team_id', id);
+    const checked = document.querySelectorAll('#etPlayers input:checked');
+    const payload = Array.from(checked).map(cb => ({ team_id: id, player_id: parseInt(cb.value) }));
+    if (payload.length) await db.from('team_players').insert(payload);
+    refreshSelects(); openManageTeams();
+  }
+
+  async function deleteTeam(id, name) {
+    if (!confirm(`Удалить команду "${name}"?`)) return;
+    await db.from('teams').delete().eq('id', id);
+    refreshSelects(); openManageTeams();
+  }
+
+  async function openManageTournaments() {
+    const { data } = await db.from('tournaments').select('*').order('date', { ascending: false });
+    document.getElementById('manageModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeManageModal()">×</button>
+      <h2>Турниры</h2>
+      ${(data || []).map(t => `<div class="map-stat-item"><div class="info"><strong>${escapeHtml(t.name)}</strong><div style="color:var(--text-muted); font-size:13px;">${t.date || ''} ${t.is_latest ? '· 🏆' : ''}</div></div><div class="actions"><button class="btn btn-secondary btn-small" onclick="editTournament(${t.id})">Ред.</button><button class="btn btn-danger btn-small" onclick="deleteTournament(${t.id},'${escapeHtml(t.name)}')">Удал.</button></div></div>`).join('')}
+    `;
+    document.getElementById('manageModal').classList.add('active');
+  }
+
+  async function editTournament(id) {
+    const { data: t } = await db.from('tournaments').select('*').eq('id', id).maybeSingle();
+    const { data: players } = await db.from('players').select('id, nickname');
+    document.getElementById('manageModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeManageModal()">×</button>
+      <h2>Редактировать турнир</h2>
+      <div class="form-group"><input id="etName" value="${escapeHtml(t.name || '')}"></div>
+      <div class="form-group"><input type="date" id="etDate" value="${t.date || ''}"></div>
+      <div class="form-group"><input type="number" id="etPrize" value="${t.prize_pool || 0}"></div>
+      <div class="form-group"><input id="etDesc" value="${escapeHtml(t.description || '')}"></div>
+      <div class="form-group"><input id="etBanner" value="${escapeHtml(t.banner_url || '')}" placeholder="URL баннера"></div>
+      <div class="form-group"><select id="etMvp"><option value="">MVP</option>${(players || []).map(p => `<option value="${p.id}" ${p.id === t.mvp_player_id ? 'selected' : ''}>${escapeHtml(p.nickname)}</option>`).join('')}</select></div>
+      <label style="color:var(--text-muted); font-size:13px;"><input type="checkbox" id="etLatest" ${t.is_latest ? 'checked' : ''}> Последний турнир</label>
+      <br><br>
+      <button class="btn btn-primary" onclick="saveTournamentEdit(${id})">Сохранить</button>
+      <button class="btn btn-secondary" onclick="openManageTournaments()">Назад</button>
+    `;
+  }
+
+  async function saveTournamentEdit(id) {
+    const isLatest = document.getElementById('etLatest').checked;
+    if (isLatest) await db.from('tournaments').update({ is_latest: false }).eq('is_latest', true);
+    const p = {
+      name: document.getElementById('etName').value.trim(),
+      date: document.getElementById('etDate').value || null,
+      prize_pool: parseInt(document.getElementById('etPrize').value) || 0,
+      description: document.getElementById('etDesc').value.trim(),
+      banner_url: document.getElementById('etBanner').value.trim() || null,
+      mvp_player_id: document.getElementById('etMvp').value || null,
+      is_latest: isLatest
+    };
+    await db.from('tournaments').update(p).eq('id', id);
+    loadWinner(); refreshSelects(); openManageTournaments();
+  }
+
+  async function deleteTournament(id, name) {
+    if (!confirm(`Удалить "${name}"?`)) return;
+    await db.from('tournaments').delete().eq('id', id);
+    loadWinner(); loadStatsBar(); refreshSelects(); openManageTournaments();
+  }
+
+  async function openManageMatches() {
+    const { data } = await db.from('matches').select('*, team1:team1_id(name), team2:team2_id(name), tournaments(name)').order('created_at', { ascending: false }).limit(100);
+    document.getElementById('manageModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeManageModal()">×</button>
+      <h2>Матчи</h2>
+      ${(data || []).map(m => `<div class="map-stat-item"><div class="info"><strong>${escapeHtml(m.team1?.name || '—')} vs ${escapeHtml(m.team2?.name || '—')}</strong><div style="color:var(--text-muted); font-size:13px;">${escapeHtml(m.tournaments?.name || '')} · ${escapeHtml(m.round_name)} · ${escapeHtml(m.format)}</div></div><div class="actions"><button class="btn btn-danger btn-small" onclick="deleteMatch(${m.id})">Удал.</button></div></div>`).join('')}
+    `;
+    document.getElementById('manageModal').classList.add('active');
+  }
+
+  async function deleteMatch(id) {
+    if (!confirm('Удалить матч?')) return;
+    await db.from('matches').delete().eq('id', id);
+    loadStatsBar(); openManageMatches();
+  }
+
+  async function openManageMapStats() {
+    const { data } = await db.from('map_stats').select('*, players(nickname), tournaments(name)').order('created_at', { ascending: false }).limit(100);
+    document.getElementById('manageModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeManageModal()">×</button>
+      <h2>Статистика карт</h2>
+      ${(data || []).map(m => `<div class="map-stat-item"><div class="info"><strong>${escapeHtml(m.players?.nickname || '—')}</strong> — ${mapIcon(m.map_name)}${escapeHtml(m.map_name)}<div style="color:var(--text-muted); font-size:13px;">${escapeHtml(m.tournaments?.name || '')} · ${m.kills}/${m.deaths} · K/D ${calcKD(m.kills, m.deaths)}</div></div><div class="actions"><button class="btn btn-danger btn-small" onclick="deleteMapStat(${m.id})">Удал.</button></div></div>`).join('')}
+    `;
+    document.getElementById('manageModal').classList.add('active');
+  }
+
+  async function deleteMapStat(id) {
+    if (!confirm('Удалить?')) return;
+    await db.from('map_stats').delete().eq('id', id);
+    loadTop3(); openManageMapStats();
+  }
+
+  function closeManageModal() { document.getElementById('manageModal').classList.remove('active'); }
+  loadPlayers();
+  loadTop3();
+  loadStatsBar();
+  loadWinner();
+  checkUser();
+  buildMatchMaps();
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      closeModal();
+      closeTournamentModal();
+      closeManageModal();
+      closeTeamModal();
+    }
+  });
+</script>
+</body>
+</html>
