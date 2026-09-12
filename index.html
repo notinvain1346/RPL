@@ -1,0 +1,624 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RPL — Counter-Strike Team</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'Segoe UI', Tahoma, sans-serif; background: #0f1419; color: #e6e6e6; min-height: 100vh; }
+
+  header { background: linear-gradient(135deg, #1a2332 0%, #0f1419 100%); border-bottom: 2px solid #2a3f5f; padding: 20px 40px; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 20px rgba(0,0,0,0.5); }
+  .logo-wrap { display: flex; align-items: center; gap: 12px; cursor: pointer; text-decoration: none; }
+  .logo-img { width: 42px; height: 42px; border-radius: 50%; object-fit: cover; border: 2px solid #4a9eff; }
+  .logo-text { font-size: 28px; font-weight: 800; letter-spacing: 3px; color: #4a9eff; text-shadow: 0 0 20px rgba(74,158,255,0.5); }
+
+  .container { max-width: 1200px; margin: 0 auto; padding: 40px 20px; }
+  h1 { font-size: 32px; margin-bottom: 10px; color: #fff; }
+  .subtitle { color: #7a8ba0; margin-bottom: 40px; font-size: 14px; letter-spacing: 1px; }
+
+  .winner-block { background: linear-gradient(145deg, #1a2332, #141b26); border: 1px solid #2a3f5f; border-radius: 16px; padding: 30px; margin-bottom: 40px; text-align: center; }
+  .winner-photo { width: 200px; height: 200px; border-radius: 50%; object-fit: cover; border: 4px solid #4a9eff; box-shadow: 0 0 40px rgba(74,158,255,0.4); margin-bottom: 20px; }
+  .winner-label { color: #7a8ba0; font-size: 13px; letter-spacing: 2px; text-transform: uppercase; margin-bottom: 5px; }
+  .winner-name { font-size: 28px; font-weight: 700; color: #fff; margin-bottom: 15px; }
+  .tournament-link { display: inline-block; background: #4a9eff; color: #0f1419; padding: 10px 25px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s; }
+  .tournament-link:hover { background: #6fb3ff; }
+
+  .news-block { background: linear-gradient(145deg, #1a2332, #141b26); border: 1px solid #2a3f5f; border-radius: 16px; padding: 30px; margin-bottom: 40px; }
+  .news-block h2 { color: #4a9eff; margin-bottom: 20px; font-size: 22px; }
+  .news-text { color: #a8b5c4; line-height: 1.6; margin-bottom: 25px; white-space: pre-wrap; }
+  .highlights-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+  .highlight-item { background: #0f1419; border: 1px solid #2a3f5f; border-radius: 10px; overflow: hidden; }
+  .highlight-item iframe, .highlight-item img, .highlight-item video { width: 100%; display: block; }
+  .highlight-item img { aspect-ratio: 16/9; object-fit: cover; }
+  .highlight-item iframe { aspect-ratio: 16/9; border: none; }
+  .highlight-caption { padding: 12px 15px; color: #e6e6e6; font-size: 14px; font-weight: 600; }
+
+  .search-box { margin-bottom: 25px; }
+  .search-box input { width: 100%; max-width: 400px; padding: 12px 18px; background: #1a2332; border: 1px solid #2a3f5f; border-radius: 10px; color: #e6e6e6; font-size: 15px; font-family: inherit; }
+  .search-box input:focus { outline: none; border-color: #4a9eff; }
+
+  .players-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 20px; }
+  .player-card { background: linear-gradient(145deg, #1a2332, #141b26); border: 1px solid #2a3f5f; border-radius: 12px; padding: 20px; transition: all 0.3s ease; cursor: pointer; text-align: center; }
+  .player-card:hover { transform: translateY(-5px); border-color: #4a9eff; box-shadow: 0 10px 30px rgba(74,158,255,0.2); }
+  .player-card img { width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 3px solid #2a3f5f; margin-bottom: 15px; }
+  .player-nick { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 5px; }
+  .player-role { display: inline-block; background: #4a9eff; color: #0f1419; font-size: 10px; font-weight: 700; padding: 3px 10px; border-radius: 20px; text-transform: uppercase; letter-spacing: 1px; }
+  .player-real-name { color: #7a8ba0; font-size: 13px; margin-top: 8px; }
+
+  .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.85); z-index: 1000; overflow-y: auto; padding: 40px 20px; }
+  .modal-overlay.active { display: block; }
+  .modal { background: #1a2332; border: 1px solid #2a3f5f; border-radius: 16px; max-width: 700px; margin: 0 auto; padding: 40px; position: relative; }
+  .modal-close { position: absolute; top: 15px; right: 20px; font-size: 28px; color: #7a8ba0; cursor: pointer; background: none; border: none; }
+  .modal-close:hover { color: #fff; }
+  .modal-photo { width: 140px; height: 140px; border-radius: 50%; object-fit: cover; border: 3px solid #4a9eff; margin-bottom: 20px; }
+  .modal h2 { color: #fff; font-size: 32px; margin-bottom: 5px; }
+  .modal .role { color: #4a9eff; font-weight: 700; margin-bottom: 20px; }
+  .modal .info-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #2a3f5f; }
+  .modal .info-row span:first-child { color: #7a8ba0; }
+  .modal .info-row span:last-child { color: #fff; font-weight: 600; }
+  .modal h3 { color: #4a9eff; margin: 25px 0 15px; font-size: 18px; }
+  .tournament-item { background: #0f1419; border: 1px solid #2a3f5f; border-radius: 8px; padding: 15px; margin-bottom: 10px; }
+  .tournament-item .t-name { color: #fff; font-weight: 700; margin-bottom: 5px; }
+  .tournament-item .t-info { color: #7a8ba0; font-size: 13px; }
+
+  .admin-section { background: #1a2332; border: 1px solid #2a3f5f; border-radius: 12px; padding: 30px; margin-bottom: 40px; }
+  .admin-section h2 { color: #4a9eff; margin-bottom: 20px; font-size: 20px; }
+  .admin-section h3 { color: #e6e6e6; margin: 20px 0 10px; font-size: 15px; }
+  .form-group { margin-bottom: 12px; }
+  .form-group input, .form-group select, .form-group textarea { width: 100%; max-width: 400px; padding: 10px 14px; background: #0f1419; border: 1px solid #2a3f5f; border-radius: 8px; color: #e6e6e6; font-size: 14px; font-family: inherit; }
+  .form-group input:focus, .form-group select:focus, .form-group textarea:focus { outline: none; border-color: #4a9eff; }
+  .form-group textarea { min-height: 80px; resize: vertical; }
+  .btn { padding: 10px 20px; border: none; border-radius: 8px; font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; margin-right: 8px; }
+  .btn-primary { background: #4a9eff; color: #0f1419; }
+  .btn-primary:hover { background: #6fb3ff; }
+  .btn-secondary { background: transparent; color: #7a8ba0; border: 1px solid #2a3f5f; }
+  .btn-secondary:hover { color: #fff; border-color: #4a9eff; }
+  .btn-danger { background: transparent; color: #ff4a4a; border: 1px solid #ff4a4a; }
+  .btn-danger:hover { background: #ff4a4a; color: #fff; }
+  .btn-small { padding: 6px 12px; font-size: 12px; }
+  .status-msg { margin-top: 12px; font-size: 13px; color: #7a8ba0; }
+  .status-msg.error { color: #ff4a4a; }
+  .status-msg.success { color: #4aff88; }
+  .loader { text-align: center; color: #7a8ba0; padding: 40px; font-size: 14px; }
+  footer { text-align: center; padding: 30px; color: #4a5a70; font-size: 12px; border-top: 1px solid #1a2332; margin-top: 60px; }
+
+  .checkbox-list { display: flex; flex-wrap: wrap; gap: 10px; max-width: 600px; }
+  .checkbox-list label { background: #0f1419; border: 1px solid #2a3f5f; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 13px; color: #e6e6e6; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+  .checkbox-list label:hover { border-color: #4a9eff; }
+  .checkbox-list input[type="checkbox"] { accent-color: #4a9eff; }
+
+  .highlight-input-row { display: flex; gap: 8px; margin-bottom: 8px; flex-wrap: wrap; }
+  .highlight-input-row input { flex: 1; min-width: 150px; padding: 8px 12px; background: #0f1419; border: 1px solid #2a3f5f; border-radius: 6px; color: #e6e6e6; font-size: 13px; }
+
+  .map-stat-row { display: flex; gap: 10px; align-items: center; margin-bottom: 8px; flex-wrap: wrap; }
+  .map-stat-row input { padding: 8px 12px; background: #0f1419; border: 1px solid #2a3f5f; border-radius: 6px; color: #e6e6e6; font-size: 13px; }
+  .map-stat-row .map-name { flex: 1; min-width: 120px; }
+  .map-stat-row .map-kills, .map-stat-row .map-deaths { width: 80px; }
+</style>
+</head>
+<body>
+
+<header>
+  <a href="#" class="logo-wrap" onclick="window.scrollTo({top:0,behavior:'smooth'}); return false;">
+    <img id="logoImg" class="logo-img" src="https://i.postimg.cc/KYXSy3mn/file.webp" alt="RPL">
+    <div class="logo-text">RPL</div>
+  </a>
+</header>
+
+<div class="container">
+  <h1>RPL</h1>
+  <p class="subtitle">COUNTER-STRIKE ROSTER</p>
+
+  <div id="winnerBlock"></div>
+  <div id="newsBlock"></div>
+
+  <div id="adminPanel" class="admin-section" style="display:none;">
+    <h2>➕ Добавить игрока</h2>
+    <div class="form-group"><input type="text" id="nick" placeholder="Ник"></div>
+    <div class="form-group"><input type="text" id="realName" placeholder="Настоящее имя"></div>
+    <div class="form-group"><input type="text" id="role" placeholder="Роль (AWP / Rifler / IGL)"></div>
+    <div class="form-group"><input type="text" id="photoUrl" placeholder="URL фото (ссылка на картинку)"></div>
+    <div class="form-group"><input type="text" id="country" placeholder="Страна"></div>
+    <div class="form-group"><input type="text" id="bio" placeholder="Краткое описание"></div>
+    <button class="btn btn-primary" onclick="addPlayer()">Сохранить игрока</button>
+
+    <h3>🏆 Добавить турнир</h3>
+    <div class="form-group"><input type="text" id="tName" placeholder="Название турнира"></div>
+    <div class="form-group"><input type="date" id="tDate"></div>
+    <div class="form-group"><input type="number" id="tPrize" placeholder="Призовой фонд ($)"></div>
+    <div class="form-group"><input type="text" id="tDesc" placeholder="Описание"></div>
+    <div class="form-group">
+      <select id="tWinner"><option value="">Победитель (выбрать)</option></select>
+    </div>
+    <div class="form-group">
+      <select id="tMvp"><option value="">MVP (выбрать)</option></select>
+    </div>
+
+    <h3>Участники турнира</h3>
+    <div id="participantsList" class="checkbox-list"></div>
+
+    <br>
+    <label style="color:#7a8ba0; font-size:13px;"><input type="checkbox" id="tLatest"> Это последний турнир (показать на главной)</label>
+    <br><br>
+    <button class="btn btn-primary" onclick="addTournament()">Сохранить турнир</button>
+
+    <h3>📊 Статистика по картам</h3>
+    <div class="form-group">
+      <select id="msTournament"><option value="">Турнир (выбрать)</option></select>
+    </div>
+    <div class="form-group">
+      <select id="msPlayer"><option value="">Игрок (выбрать)</option></select>
+    </div>
+    <div class="form-group"><input type="text" id="msMap" placeholder="Название карты (Mirage, Inferno...)"></div>
+    <div class="form-group"><input type="number" id="msKills" placeholder="Киллы"></div>
+    <div class="form-group"><input type="number" id="msDeaths" placeholder="Смерти"></div>
+    <button class="btn btn-primary" onclick="addMapStat()">Сохранить карту</button>
+
+    <h3>📰 Новость и хайлайты (для последнего турнира)</h3>
+    <div class="form-group">
+      <textarea id="newsText" placeholder="Текст новости (можно оставить пустым)"></textarea>
+    </div>
+    <div id="highlightsInputs">
+      <div class="highlight-input-row">
+        <input type="text" class="hl-url" placeholder="URL видео (YouTube) или картинки">
+        <input type="text" class="hl-title" placeholder="Подпись">
+      </div>
+    </div>
+    <button class="btn btn-secondary btn-small" onclick="addHighlightInput()">+ Ещё хайлайт</button>
+    <br><br>
+    <button class="btn btn-primary" onclick="saveNews()">Сохранить новость</button>
+
+    <button class="btn btn-danger" onclick="logout()" style="margin-top:20px;">Выйти</button>
+    <div id="adminStatus" class="status-msg"></div>
+  </div>
+
+  <div id="loginPanel" class="admin-section" style="display:none;">
+    <h2>🔐 Вход для администратора</h2>
+    <div class="form-group"><input type="email" id="email" placeholder="Email"></div>
+    <div class="form-group"><input type="password" id="password" placeholder="Пароль"></div>
+    <button class="btn btn-primary" onclick="login()">Войти</button>
+    <button class="btn btn-secondary" onclick="hideLogin()">Отмена</button>
+    <div id="loginStatus" class="status-msg"></div>
+  </div>
+
+  <div id="guestBar" style="margin-bottom:30px; text-align:right;">
+    <button class="btn btn-secondary" onclick="showLogin()">Войти как админ</button>
+  </div>
+
+  <div class="search-box">
+    <input type="text" id="searchInput" placeholder="🔍 Поиск игрока по нику..." oninput="filterPlayers()">
+  </div>
+
+  <div id="playersList">
+    <div class="loader">Загрузка игроков...</div>
+  </div>
+</div>
+
+<div id="playerModal" class="modal-overlay" onclick="if(event.target===this)closeModal()">
+  <div class="modal" id="playerModalContent"></div>
+</div>
+
+<div id="tournamentModal" class="modal-overlay" onclick="if(event.target===this)closeTournamentModal()">
+  <div class="modal" id="tournamentModalContent"></div>
+</div>
+
+<footer>© RPL Team — Counter-Strike Roster</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+  const SUPABASE_URL = 'https://fupiurmwkfpicfvigchd.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_N-p4CNsypVEzaPKxnzH8mw_UPu43izZ';
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  let allPlayers = [];
+  let latestTournamentId = null;
+
+  function youtubeEmbed(url) {
+    if (!url) return null;
+    const m = url.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([A-Za-z0-9_-]{11})/);
+    return m ? `https://www.youtube.com/embed/${m[1]}` : null;
+  }
+
+  function isImage(url) {
+    return /\.(jpg|jpeg|png|gif|webp|avif)(\?.*)?$/i.test(url);
+  }
+
+  function calcKD(kills, deaths) {
+    if (deaths === 0) return kills > 0 ? kills.toFixed(2) : '0.00';
+    return (kills / deaths).toFixed(2);
+  }
+
+  async function loadWinner() {
+    const block = document.getElementById('winnerBlock');
+    const { data, error } = await db.from('tournaments').select('*').eq('is_latest', true).limit(1).maybeSingle();
+    if (error || !data) { block.innerHTML = ''; latestTournamentId = null; return; }
+    latestTournamentId = data.id;
+
+    const { data: winner } = await db.from('players').select('*').eq('id', data.winner_player_id).maybeSingle();
+    if (!winner) { block.innerHTML = ''; return; }
+
+    block.innerHTML = `
+      <div class="winner-block">
+        <div class="winner-label">Победитель последнего турнира</div>
+        <img class="winner-photo" src="${winner.photo_url || ''}" alt="${escapeHtml(winner.nickname)}">
+        <div class="winner-name">${escapeHtml(winner.nickname)}</div>
+        <div class="tournament-link" onclick="openTournament(${data.id})">${escapeHtml(data.name)}</div>
+      </div>
+    `;
+    loadNews();
+  }
+
+  async function loadNews() {
+    const block = document.getElementById('newsBlock');
+    if (!latestTournamentId) { block.innerHTML = ''; return; }
+
+    const { data: news } = await db.from('news').select('*').eq('tournament_id', latestTournamentId).limit(1).maybeSingle();
+    if (!news) { block.innerHTML = ''; return; }
+
+    const { data: highlights } = await db.from('highlights').select('*').eq('news_id', news.id).order('sort_order', { ascending: true });
+
+    let highlightsHtml = '';
+    if (highlights && highlights.length > 0) {
+      highlightsHtml = '<div class="highlights-grid">' + highlights.map(h => {
+        const embed = youtubeEmbed(h.url);
+        let media = '';
+        if (embed) {
+          media = `<iframe src="${embed}" allowfullscreen></iframe>`;
+        } else if (isImage(h.url)) {
+          media = `<img src="${h.url}" alt="${escapeHtml(h.title || '')}">`;
+        } else {
+          media = `<video src="${h.url}" controls></video>`;
+        }
+        return `<div class="highlight-item">${media}<div class="highlight-caption">${escapeHtml(h.title || '')}</div></div>`;
+      }).join('') + '</div>';
+    }
+
+    block.innerHTML = `
+      <div class="news-block">
+        <h2>📰 Новости последнего турнира</h2>
+        ${news.text_content ? `<div class="news-text">${escapeHtml(news.text_content)}</div>` : ''}
+        ${highlightsHtml}
+      </div>
+    `;
+  }
+
+  async function loadPlayers() {
+    const list = document.getElementById('playersList');
+    const { data, error } = await db.from('players').select('*');
+    if (error) { list.innerHTML = '<div class="loader" style="color:#ff4a4a;">Ошибка: ' + error.message + '</div>'; return; }
+    allPlayers = data || [];
+    renderPlayers(allPlayers);
+  }
+
+  function renderPlayers(players) {
+    const list = document.getElementById('playersList');
+    if (!players || players.length === 0) {
+      list.innerHTML = '<div class="loader">Игроки не найдены</div>';
+      return;
+    }
+    list.innerHTML = '<div class="players-grid">' + players.map(p => `
+      <div class="player-card" onclick="openPlayer(${p.id})">
+        <img src="${p.photo_url || ''}" alt="${escapeHtml(p.nickname)}">
+        <div class="player-nick">${escapeHtml(p.nickname)}</div>
+        ${p.role ? `<div class="player-role">${escapeHtml(p.role)}</div>` : ''}
+        ${p.real_name ? `<div class="player-real-name">${escapeHtml(p.real_name)}</div>` : ''}
+      </div>
+    `).join('') + '</div>';
+  }
+
+  function filterPlayers() {
+    const query = document.getElementById('searchInput').value.trim().toLowerCase();
+    if (!query) { renderPlayers(allPlayers); return; }
+    const filtered = allPlayers.filter(p => (p.nickname || '').toLowerCase().includes(query));
+    renderPlayers(filtered);
+  }
+
+  async function openPlayer(id) {
+    const { data: p } = await db.from('players').select('*').eq('id', id).maybeSingle();
+    if (!p) return;
+
+    const { data: mapStats } = await db.from('map_stats').select('*, tournaments(name, date)').eq('player_id', id).order('created_at', { ascending: false });
+
+    let totalKills = 0, totalDeaths = 0;
+    const byTournament = {};
+
+    if (mapStats && mapStats.length > 0) {
+      mapStats.forEach(m => {
+        totalKills += m.kills;
+        totalDeaths += m.deaths;
+        const tName = m.tournaments?.name || 'Без турнира';
+        if (!byTournament[tName]) byTournament[tName] = [];
+        byTournament[tName].push(m);
+      });
+    }
+
+    const overallKD = calcKD(totalKills, totalDeaths);
+
+    let tournamentsHtml = '';
+    if (Object.keys(byTournament).length > 0) {
+      tournamentsHtml = Object.keys(byTournament).map(tName => {
+        const maps = byTournament[tName];
+        let tKills = 0, tDeaths = 0;
+        maps.forEach(m => { tKills += m.kills; tDeaths += m.deaths; });
+        const tKD = calcKD(tKills, tDeaths);
+
+        const mapsHtml = maps.map(m => `
+          <div class="t-info" style="display:flex; justify-content:space-between;">
+            <span>${escapeHtml(m.map_name)}</span>
+            <span>${m.kills}/${m.deaths} · K/D ${calcKD(m.kills, m.deaths)}</span>
+          </div>
+        `).join('');
+
+        return `
+          <div class="tournament-item">
+            <div class="t-name">${escapeHtml(tName)} — K/D ${tKD} (${tKills}/${tDeaths})</div>
+            ${mapsHtml}
+          </div>
+        `;
+      }).join('');
+    } else {
+      tournamentsHtml = '<div class="t-info" style="color:#7a8ba0;">Нет данных о турнирах</div>';
+    }
+
+    document.getElementById('playerModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeModal()">×</button>
+      <img class="modal-photo" src="${p.photo_url || ''}" alt="${escapeHtml(p.nickname)}">
+      <h2>${escapeHtml(p.nickname)}</h2>
+      <div class="role">${escapeHtml(p.role || '')}</div>
+      <div class="info-row"><span>Настоящее имя</span><span>${escapeHtml(p.real_name || '—')}</span></div>
+      <div class="info-row"><span>Страна</span><span>${escapeHtml(p.country || '—')}</span></div>
+      <div class="info-row"><span>Общий K/D</span><span>${overallKD} (${totalKills}/${totalDeaths})</span></div>
+      <h3>🏆 Турниры</h3>
+      ${tournamentsHtml}
+    `;
+    document.getElementById('playerModal').classList.add('active');
+  }
+
+  function closeModal() { document.getElementById('playerModal').classList.remove('active'); }
+
+  async function openTournament(id) {
+    const { data: t } = await db.from('tournaments').select('*').eq('id', id).maybeSingle();
+    if (!t) return;
+
+    const { data: winner } = t.winner_player_id ? await db.from('players').select('nickname').eq('id', t.winner_player_id).maybeSingle() : { data: null };
+    const { data: mvp } = t.mvp_player_id ? await db.from('players').select('nickname').eq('id', t.mvp_player_id).maybeSingle() : { data: null };
+
+    const { data: participants } = await db.from('tournament_participants').select('*, players(nickname)').eq('tournament_id', id);
+
+    let partsHtml = '';
+    if (participants && participants.length > 0) {
+      partsHtml = participants.map(p => `<div class="t-info">${escapeHtml(p.players?.nickname || '—')} — место ${p.placement || '?'}</div>`).join('');
+    } else {
+      partsHtml = '<div class="t-info" style="color:#7a8ba0;">Нет данных об участниках</div>';
+    }
+
+    document.getElementById('tournamentModalContent').innerHTML = `
+      <button class="modal-close" onclick="closeTournamentModal()">×</button>
+      <h2>${escapeHtml(t.name)}</h2>
+      <div class="info-row"><span>Дата</span><span>${t.date || '—'}</span></div>
+      <div class="info-row"><span>Призовой фонд</span><span>$${t.prize_pool || 0}</span></div>
+      <div class="info-row"><span>Победитель</span><span>${escapeHtml(winner?.nickname || '—')}</span></div>
+      <div class="info-row"><span>MVP</span><span>${escapeHtml(mvp?.nickname || '—')}</span></div>
+      <h3>Участники</h3>
+      ${partsHtml}
+      ${t.description ? `<h3>Описание</h3><div class="t-info">${escapeHtml(t.description)}</div>` : ''}
+    `;
+    document.getElementById('tournamentModal').classList.add('active');
+  }
+
+  function closeTournamentModal() { document.getElementById('tournamentModal').classList.remove('active'); }
+
+  function addHighlightInput() {
+    const container = document.getElementById('highlightsInputs');
+    const row = document.createElement('div');
+    row.className = 'highlight-input-row';
+    row.innerHTML = `
+      <input type="text" class="hl-url" placeholder="URL видео (YouTube) или картинки">
+      <input type="text" class="hl-title" placeholder="Подпись">
+    `;
+    container.appendChild(row);
+  }
+
+  async function addMapStat() {
+    const status = document.getElementById('adminStatus');
+    const tournamentId = document.getElementById('msTournament').value;
+    const playerId = document.getElementById('msPlayer').value;
+    const mapName = document.getElementById('msMap').value.trim();
+    const kills = parseInt(document.getElementById('msKills').value) || 0;
+    const deaths = parseInt(document.getElementById('msDeaths').value) || 0;
+
+    if (!tournamentId || !playerId || !mapName) {
+      status.textContent = 'Заполни турнир, игрока и карту';
+      status.className = 'status-msg error';
+      return;
+    }
+
+    const { error } = await db.from('map_stats').insert([{
+      tournament_id: parseInt(tournamentId),
+      player_id: parseInt(playerId),
+      map_name: mapName,
+      kills,
+      deaths
+    }]);
+
+    if (error) { status.textContent = 'Ошибка: ' + error.message; status.className = 'status-msg error'; }
+    else {
+      status.textContent = '✅ Статистика сохранена!'; status.className = 'status-msg success';
+      document.getElementById('msMap').value = '';
+      document.getElementById('msKills').value = '';
+      document.getElementById('msDeaths').value = '';
+    }
+  }
+
+  async function saveNews() {
+    const status = document.getElementById('adminStatus');
+    if (!latestTournamentId) { status.textContent = 'Сначала отметь турнир как последний'; status.className = 'status-msg error'; return; }
+
+    const text = document.getElementById('newsText').value.trim();
+
+    const { data: existing } = await db.from('news').select('id').eq('tournament_id', latestTournamentId).maybeSingle();
+
+    let newsId;
+    if (existing) {
+      await db.from('news').update({ text_content: text }).eq('id', existing.id);
+      newsId = existing.id;
+      await db.from('highlights').delete().eq('news_id', newsId);
+    } else {
+      const { data: created, error } = await db.from('news').insert([{ tournament_id: latestTournamentId, text_content: text }]).select().single();
+      if (error) { status.textContent = 'Ошибка: ' + error.message; status.className = 'status-msg error'; return; }
+      newsId = created.id;
+    }
+
+    const rows = document.querySelectorAll('#highlightsInputs .highlight-input-row');
+    const payload = [];
+    rows.forEach((row, i) => {
+      const url = row.querySelector('.hl-url').value.trim();
+      const title = row.querySelector('.hl-title').value.trim();
+      if (url) payload.push({ news_id: newsId, url, title, sort_order: i });
+    });
+
+    if (payload.length > 0) {
+      const { error } = await db.from('highlights').insert(payload);
+      if (error) { status.textContent = 'Ошибка хайлайтов: ' + error.message; status.className = 'status-msg error'; return; }
+    }
+
+    status.textContent = '✅ Новость сохранена!'; status.className = 'status-msg success';
+    document.getElementById('newsText').value = '';
+    document.getElementById('highlightsInputs').innerHTML = `
+      <div class="highlight-input-row">
+        <input type="text" class="hl-url" placeholder="URL видео (YouTube) или картинки">
+        <input type="text" class="hl-title" placeholder="Подпись">
+      </div>
+    `;
+    loadNews();
+  }
+
+  async function addPlayer() {
+    const status = document.getElementById('adminStatus');
+    const nickname = document.getElementById('nick').value.trim();
+    if (!nickname) { status.textContent = 'Ник обязателен'; status.className = 'status-msg error'; return; }
+
+    const payload = {
+      nickname,
+      real_name: document.getElementById('realName').value.trim(),
+      role: document.getElementById('role').value.trim(),
+      photo_url: document.getElementById('photoUrl').value.trim(),
+      country: document.getElementById('country').value.trim(),
+      bio: document.getElementById('bio').value.trim()
+    };
+
+    const { error } = await db.from('players').insert([payload]);
+    if (error) { status.textContent = 'Ошибка: ' + error.message; status.className = 'status-msg error'; }
+    else {
+      status.textContent = '✅ Игрок добавлен!'; status.className = 'status-msg success';
+      document.getElementById('nick').value = ''; document.getElementById('realName').value = '';
+      document.getElementById('role').value = ''; document.getElementById('photoUrl').value = '';
+      document.getElementById('country').value = ''; document.getElementById('bio').value = '';
+      loadPlayers(); loadWinner(); refreshSelects();
+    }
+  }
+
+  async function addTournament() {
+    const status = document.getElementById('adminStatus');
+    const name = document.getElementById('tName').value.trim();
+    if (!name) { status.textContent = 'Название турнира обязательно'; status.className = 'status-msg error'; return; }
+
+    if (document.getElementById('tLatest').checked) {
+      await db.from('tournaments').update({ is_latest: false }).eq('is_latest', true);
+    }
+
+    const payload = {
+      name,
+      date: document.getElementById('tDate').value || null,
+      prize_pool: parseInt(document.getElementById('tPrize').value) || 0,
+      description: document.getElementById('tDesc').value.trim(),
+      winner_player_id: document.getElementById('tWinner').value || null,
+      mvp_player_id: document.getElementById('tMvp').value || null,
+      is_latest: document.getElementById('tLatest').checked
+    };
+
+    const { data: inserted, error } = await db.from('tournaments').insert([payload]).select().single();
+    if (error) { status.textContent = 'Ошибка: ' + error.message; status.className = 'status-msg error'; return; }
+
+    const checked = document.querySelectorAll('#participantsList input:checked');
+    const participantsPayload = Array.from(checked).map(cb => ({
+      tournament_id: inserted.id,
+      player_id: parseInt(cb.value)
+    }));
+
+    if (participantsPayload.length > 0) {
+      await db.from('tournament_participants').insert(participantsPayload);
+    }
+
+    status.textContent = '✅ Турнир добавлен!'; status.className = 'status-msg success';
+    document.getElementById('tName').value = ''; document.getElementById('tDate').value = '';
+    document.getElementById('tPrize').value = ''; document.getElementById('tDesc').value = '';
+    document.getElementById('tWinner').value = ''; document.getElementById('tMvp').value = '';
+    document.getElementById('tLatest').checked = false;
+    document.querySelectorAll('#participantsList input').forEach(cb => cb.checked = false);
+    loadWinner(); refreshSelects();
+  }
+
+  async function refreshSelects() {
+    const { data: players } = await db.from('players').select('id, nickname');
+    const { data: tournaments } = await db.from('tournaments').select('id, name');
+
+    const w = document.getElementById('tWinner');
+    const m = document.getElementById('tMvp');
+    const p = document.getElementById('participantsList');
+    const msT = document.getElementById('msTournament');
+    const msP = document.getElementById('msPlayer');
+
+    const playerOptions = (players || []).map(pl => `<option value="${pl.id}">${escapeHtml(pl.nickname)}</option>`).join('');
+    w.innerHTML = '<option value="">Победитель (выбрать)</option>' + playerOptions;
+    m.innerHTML = '<option value="">MVP (выбрать)</option>' + playerOptions;
+
+    p.innerHTML = (players || []).map(pl => `
+      <label>
+        <input type="checkbox" value="${pl.id}">
+        ${escapeHtml(pl.nickname)}
+      </label>
+    `).join('');
+
+    msP.innerHTML = '<option value="">Игрок (выбрать)</option>' + playerOptions;
+    msT.innerHTML = '<option value="">Турнир (выбрать)</option>' + (tournaments || []).map(t => `<option value="${t.id}">${escapeHtml(t.name)}</option>`).join('');
+  }
+
+  async function login() {
+    const status = document.getElementById('loginStatus');
+    const { error } = await db.auth.signInWithPassword({
+      email: document.getElementById('email').value.trim(),
+      password: document.getElementById('password').value
+    });
+    if (error) { status.textContent = 'Ошибка: ' + error.message; status.className = 'status-msg error'; }
+    else { checkUser(); refreshSelects(); }
+  }
+
+  async function logout() { await db.auth.signOut(); checkUser(); }
+
+  function showLogin() { document.getElementById('loginPanel').style.display = 'block'; document.getElementById('guestBar').style.display = 'none'; }
+  function hideLogin() { document.getElementById('loginPanel').style.display = 'none'; document.getElementById('guestBar').style.display = 'block'; }
+
+  async function checkUser() {
+    const { data: { user } } = await db.auth.getUser();
+    const admin = document.getElementById('adminPanel');
+    const login = document.getElementById('loginPanel');
+    const guest = document.getElementById('guestBar');
+    if (user) { admin.style.display = 'block'; login.style.display = 'none'; guest.style.display = 'none'; refreshSelects(); }
+    else { admin.style.display = 'none'; login.style.display = 'none'; guest.style.display = 'block'; }
+  }
+
+  function escapeHtml(str) {
+    if (!str) return '';
+    return String(str).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;');
+  }
+
+  loadPlayers();
+  loadWinner();
+  checkUser();
+</script>
+</body>
+</html>
